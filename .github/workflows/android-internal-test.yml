@@ -48,6 +48,9 @@ jobs:
           workload_identity_provider: 'projects/853738758359/locations/global/workloadIdentityPools/github-pool-workflow/providers/github-provider'
           service_account: 'app-condominios@app-condominios-461012.iam.gserviceaccount.com'
 
+      - name: Grant execute permission for gradlew
+        run: chmod +x android/gradlew
+
       - name: Build Release AAB
         run: cd android && ./gradlew bundleRelease
 
