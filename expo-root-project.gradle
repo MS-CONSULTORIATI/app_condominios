@@ -1,0 +1,17 @@
+// Expo ROOT project plugin
+ext.kspVersion = '2.0.21-1.0.28'
+
+// Configure Kotlin compatibility settings
+ext.kotlin = [
+    version: '1.9.10',  // Use a more compatible Kotlin version
+    compatibility: [
+        // Specify JVM target compatibility - match Java 17
+        jvmTarget: '17'
+    ]
+]
+
+// Configure Android compilations settings
+ext.androidCompilations = [
+    sourceCompatibility: JavaVersion.VERSION_17,
+    targetCompatibility: JavaVersion.VERSION_17
+]

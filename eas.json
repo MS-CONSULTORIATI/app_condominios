@@ -1,0 +1,75 @@
+{
+  "cli": {
+    "version": ">= 0.52.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "preview": {
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease",
+        "env": {
+          "ANDROID_NDK_HOME": "/opt/android-sdk/ndk/25.1.8937393"
+        },
+        "distribution": "internal",
+        "node": "20.11.1",
+        "image": "ubuntu-22.04-jdk-17-ndk-r25b"
+      },
+      "ios": {
+        "buildConfiguration": "Release",
+        "distribution": "internal",
+        "simulator": false
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.example.com",
+        "YARN_ENABLE_IMMUTABLE_INSTALLS": "false",
+        "NODE_OPTIONS": "--max-old-space-size=4096",
+        "USE_NPM": "true",
+        "EXPO_USE_NPM": "1"
+      },
+      "cache": {
+        "key": "eas-build-5"
+      },
+      "developmentClient": false
+    },
+    "development": {
+      "extends": "preview",
+      "developmentClient": true,
+      "distribution": "internal",
+      "channel": "development"
+    },
+    "debug": {
+      "extends": "development",
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleDebug"
+      },
+      "ios": {
+        "buildConfiguration": "Debug",
+        "simulator": true
+      },
+      "developmentClient": true,
+      "distribution": "internal",
+      "channel": "debug"
+    },
+    "production": {
+      "android": {
+        "buildType": "app-bundle",
+        "gradleCommand": ":app:bundleDebug"
+      },
+      "ios": {
+        "buildConfiguration": "Release",
+        "distribution": "store"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "SEU_APPLE_ID",
+        "ascAppId": "ID_DO_APP_NA_APP_STORE_CONNECT",
+        "appleTeamId": "ID_DA_EQUIPE_APPLE"
+      }
+    }
+  }
+} 

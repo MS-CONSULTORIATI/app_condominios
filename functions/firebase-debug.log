@@ -1,0 +1,82 @@
+[debug] [2025-05-07T19:06:57.114Z] ----------------------------------------------------------------------
+[debug] [2025-05-07T19:06:57.120Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\maike\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js functions:shell
+[debug] [2025-05-07T19:06:57.121Z] CLI Version:   14.2.2
+[debug] [2025-05-07T19:06:57.121Z] Platform:      win32
+[debug] [2025-05-07T19:06:57.121Z] Node Version:  v22.14.0
+[debug] [2025-05-07T19:06:57.122Z] Time:          Wed May 07 2025 16:06:57 GMT-0300 (Horário Padrão de Brasília)
+[debug] [2025-05-07T19:06:57.122Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-05-07T19:06:58.194Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-05-07T19:06:58.196Z] > authorizing via signed-in user (maikejo@gmail.com)
+[debug] [2025-05-07T19:06:58.198Z] [iam] checking project condominio-santacecilia for permissions ["firebase.projects.get"]
+[debug] [2025-05-07T19:06:58.201Z] Checked if tokens are valid: false, expires at: 1746624100574
+[debug] [2025-05-07T19:06:58.202Z] Checked if tokens are valid: false, expires at: 1746624100574
+[debug] [2025-05-07T19:06:58.204Z] > refreshing access token with scopes: []
+[debug] [2025-05-07T19:06:58.226Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-05-07T19:06:58.227Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-05-07T19:06:58.892Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-05-07T19:06:58.892Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-05-07T19:06:58.905Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/condominio-santacecilia:testIamPermissions [none]
+[debug] [2025-05-07T19:06:58.906Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/condominio-santacecilia:testIamPermissions x-goog-quota-user=projects/condominio-santacecilia
+[debug] [2025-05-07T19:06:58.906Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/condominio-santacecilia:testIamPermissions {"permissions":["firebase.projects.get"]}
+[debug] [2025-05-07T19:06:59.853Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/condominio-santacecilia:testIamPermissions 200
+[debug] [2025-05-07T19:06:59.853Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/condominio-santacecilia:testIamPermissions {"permissions":["firebase.projects.get"]}
+[debug] [2025-05-07T19:06:59.905Z] [functions] Functions Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2025-05-07T19:07:00.014Z] defaultcredentials: writing to file C:\Users\maike\AppData\Roaming\firebase\maikejo_gmail_com_application_default_credentials.json
+[debug] [2025-05-07T19:07:00.033Z] DEBUG: Setting GAC to C:\Users\maike\AppData\Roaming\firebase\maikejo_gmail_com_application_default_credentials.json
+[debug] [2025-05-07T19:07:00.033Z] Checked if tokens are valid: true, expires at: 1746648417894
+[debug] [2025-05-07T19:07:00.033Z] Checked if tokens are valid: true, expires at: 1746648417894
+[debug] [2025-05-07T19:07:00.034Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/condominio-santacecilia/adminSdkConfig [none]
+[debug] [2025-05-07T19:07:00.547Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/condominio-santacecilia/adminSdkConfig 200
+[debug] [2025-05-07T19:07:00.548Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/condominio-santacecilia/adminSdkConfig {"projectId":"condominio-santacecilia","storageBucket":"condominio-santacecilia.firebasestorage.app"}
+[debug] [2025-05-07T19:07:00.601Z] [functions] Watching "C:\condsantacecilia\functions" for Cloud Functions...
+[debug] [2025-05-07T19:07:00.642Z] Validating nodejs source
+[debug] [2025-05-07T19:07:04.685Z] > [functions] package.json contents: {
+  "name": "functions",
+  "scripts": {
+    "lint": "eslint --ext .js,.ts .",
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "shell": "npm run build && firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "npm run build && firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "18"
+  },
+  "main": "lib/index.js",
+  "dependencies": {
+    "@types/node": "^18.11.9",
+    "axios": "^1.6.7",
+    "firebase-admin": "^13.3.0",
+    "firebase-functions": "^6.3.2",
+    "functions": "file:"
+  },
+  "devDependencies": {
+    "@types/axios": "^0.9.36",
+    "@typescript-eslint/eslint-plugin": "^5.12.0",
+    "@typescript-eslint/parser": "^5.12.0",
+    "eslint": "^8.9.0",
+    "eslint-config-google": "^0.14.0",
+    "eslint-plugin-import": "^2.25.4",
+    "firebase-functions-test": "^3.1.0",
+    "typescript": "^4.9.0"
+  },
+  "private": true
+}
+[debug] [2025-05-07T19:07:04.693Z] Building nodejs source
+[debug] [2025-05-07T19:07:04.694Z] Failed to find version of module node: reached end of search path C:\condsantacecilia\functions\node_modules
+[warn] !  functions: Your requested "node" version "18" doesn't match your global version "22". Using node@22 from host. 
+[debug] [2025-05-07T19:07:04.702Z] Could not find functions.yaml. Must use http discovery
+[debug] [2025-05-07T19:07:04.786Z] Found firebase-functions binary at 'C:\condsantacecilia\functions\node_modules\.bin\firebase-functions'
+[info] Serving at port 8697
+
+[debug] [2025-05-07T19:07:06.711Z] Got response from /__/functions.yaml {"endpoints":{"sendPushNotification":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","labels":{},"eventTrigger":{"eventType":"google.cloud.firestore.document.v1.created","eventFilters":{"database":"(default)","namespace":"(default)"},"eventFilterPathPatterns":{"document":"notifications/{notificationId}"},"retry":false},"entryPoint":"sendPushNotification"},"testPushNotification":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","labels":{},"httpsTrigger":{},"entryPoint":"testPushNotification"},"processPendingFcmNotifications":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","labels":{},"eventTrigger":{"eventType":"google.cloud.firestore.document.v1.created","eventFilters":{"database":"(default)","namespace":"(default)"},"eventFilterPathPatterns":{"document":"pendingNotifications/{notificationId}"},"retry":false},"entryPoint":"processPendingFcmNotifications"}},"specVersion":"v1alpha1","requiredAPIs":[],"extensions":{}}
+[debug] [2025-05-07T19:07:10.841Z] [functions] Loaded functions definitions from source: sendPushNotification, testPushNotification, processPendingFcmNotifications.
+[debug] [2025-05-07T19:07:10.846Z] [functions[us-central1-sendPushNotification]] function ignored because the firestore emulator does not exist or is not running.
+[debug] [2025-05-07T19:07:10.847Z] [functions[us-central1-testPushNotification]] http function initialized (http://127.0.0.1:5000/condominio-santacecilia/us-central1/testPushNotification).
+[debug] [2025-05-07T19:07:10.847Z] [functions[us-central1-processPendingFcmNotifications]] function ignored because the firestore emulator does not exist or is not running.
+[info] i  functions: Loaded functions: sendPushNotification, testPushNotification, processPendingFcmNotifications 
+[warn] !  functions: The following emulators are not running, calls to these services will affect production: firestore, database, pubsub, storage, eventarc, tasks 

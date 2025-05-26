@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1009443281417",
+    "project_id": "condominio-santacecilia",
+    "storage_bucket": "condominio-santacecilia.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1009443281417:android:92b24f46a20f326c13f6d8",
+        "android_client_info": {
+          "package_name": "br.com.condominio.cecilia"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAsYgRY_R2l1UJ4t-J1hGhwv3Udl_yb2w0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
