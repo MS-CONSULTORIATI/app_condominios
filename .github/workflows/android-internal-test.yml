@@ -34,13 +34,6 @@ jobs:
       - name: Decode Keystore
         run: echo "${{ secrets.KEYSTORE_FILE }}" | base64 -d > android/app/my-release-key.jks
 
-      - name: Set up gradle.properties
-        run:
-          echo "MYAPP_UPLOAD_STORE_FILE=my-release-key.jks" >> android/gradle.properties
-          echo "MYAPP_UPLOAD_KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> android/gradle.properties
-          echo "MYAPP_UPLOAD_STORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> android/gradle.properties
-          echo "MYAPP_UPLOAD_KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> android/gradle.properties
-
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
@@ -53,6 +46,11 @@ jobs:
 
       - name: Build Release AAB
         run: cd android && ./gradlew bundleRelease
+        env:
+          MYAPP_UPLOAD_STORE_FILE: my-release-key.jks
+          MYAPP_UPLOAD_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          MYAPP_UPLOAD_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          MYAPP_UPLOAD_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: Upload to Google Play Internal Test
         uses: r0adkll/upload-google-play@v1
