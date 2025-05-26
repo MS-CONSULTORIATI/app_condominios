@@ -35,7 +35,7 @@ jobs:
         run: echo "${{ secrets.KEYSTORE_FILE }}" | base64 -d > android/app/my-release-key.jks
 
       - name: Set up gradle.properties
-        run: |
+        run:
           echo "MYAPP_UPLOAD_STORE_FILE=my-release-key.jks" >> android/gradle.properties
           echo "MYAPP_UPLOAD_KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> android/gradle.properties
           echo "MYAPP_UPLOAD_STORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> android/gradle.properties
