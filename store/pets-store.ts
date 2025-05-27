@@ -180,12 +180,15 @@ export const usePetsStore = create<PetsState>((set, get) => ({
       const db = getFirestore();
       const petsRef = collection(db, 'pets');
       
-      const docRef = await addDoc(petsRef, {
+      // Remover campos undefined
+      const cleanPetData = Object.fromEntries(Object.entries({
         ...petData,
         photoURL,
         ownerId: auth.currentUser.uid,
         createdAt: serverTimestamp()
-      });
+      }).filter(([_, v]) => v !== undefined));
+
+      const docRef = await addDoc(petsRef, cleanPetData);
       
       console.log('Pet criado com ID:', docRef.id);
       
