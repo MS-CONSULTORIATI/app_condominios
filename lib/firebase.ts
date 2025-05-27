@@ -46,12 +46,12 @@ import { createNotificationOnce } from './createNotification'; // Adicionar esta
 
 // Your Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyBwsMZmVDvC7lxD0pzIKOFDdxN8JRonozo",
-  authDomain: "condominio-santacecilia.firebaseapp.com",
-  projectId: "condominio-santacecilia",
-  storageBucket: "condominio-santacecilia.firebasestorage.app",
-  messagingSenderId: "1009443281417",
-  appId: "1:1009443281417:web:45548c570c89dd5e13f6d8"
+  apiKey: "AIzaSyAxIDBnM_owGB07qBSGb58fWek_5vJjPbc",
+  authDomain: "app-condominio-facil.firebaseapp.com",
+  projectId: "app-condominio-facil",
+  storageBucket: "app-condominio-facil.firebasestorage.app",
+  messagingSenderId: "1038650648816",
+  appId: "1:1038650648816:web:c60bd21ed6b12a3e793a35"
 };
 
 // Exportar configuração para reuso

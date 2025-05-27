@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "1009443281417",
-    "project_id": "condominio-santacecilia",
-    "storage_bucket": "condominio-santacecilia.firebasestorage.app"
+    "project_number": "1038650648816",
+    "project_id": "app-condominio-facil",
+    "storage_bucket": "app-condominio-facil.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1009443281417:android:92b24f46a20f326c13f6d8",
+        "mobilesdk_app_id": "1:1038650648816:android:4a596a4d94643092793a35",
         "android_client_info": {
-          "package_name": "br.com.condominio.cecilia"
+          "package_name": "br.com.condominio.facil"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAsYgRY_R2l1UJ4t-J1hGhwv3Udl_yb2w0"
+          "current_key": "AIzaSyDqi8mSSlNJ78opplGfTQkDRmfcrUnniT0"
         }
       ],
       "services": {

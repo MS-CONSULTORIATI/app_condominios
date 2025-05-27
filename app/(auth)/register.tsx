@@ -205,7 +205,7 @@ export default function RegisterScreen() {
           style={styles.titleContainer}
         >
           <Text style={styles.title}>Criar Conta</Text>
-          <Text style={styles.subtitle}>Preencha os dados para se registrar no Condomínio Santa Cecília</Text>
+          <Text style={styles.subtitle}>Preencha os dados para se registrar no Condomínio Fácil</Text>
         </Animated.View>
         
         <Animated.View 

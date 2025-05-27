@@ -21,7 +21,7 @@ extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
   }
 }
 
-rootProject.name = 'Condomínio Santa Cecília'
+rootProject.name = 'Condomínio Facil'
 
 dependencyResolutionManagement {
   versionCatalogs {

@@ -1,5 +1,8 @@
 {
   "projects": {
-    "default": "condominio-santacecilia"
-  }
+    "default": "condominio-santacecilia",
+    "app-condominio-facil": "app-condominio-facil"
+  },
+  "targets": {},
+  "etags": {}
 }

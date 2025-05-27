@@ -152,7 +152,7 @@ const AnimatedSplash: React.FC<AnimatedSplashProps> = ({ onAnimationComplete }) 
         </Animated.View>
         
         <Animated.Text style={[styles.title, textAnimatedStyle]}>
-          Condomínio Santa Cecília
+          Condomínio Fácil
         </Animated.Text>
         
         <Animated.Text style={[styles.subtitle, textAnimatedStyle]}>

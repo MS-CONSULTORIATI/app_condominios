@@ -1,4 +1,4 @@
-package br.com.condominio.cecilia
+package br.com.condominio.facil
 
 import android.app.Application
 import android.content.res.Configuration

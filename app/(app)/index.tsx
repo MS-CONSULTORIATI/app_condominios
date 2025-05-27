@@ -477,7 +477,7 @@ export default function HomeScreen() {
               Olá, {user?.name?.split(' ')[0] || 'Morador'}!
             </Text>
             <Text style={styles.welcomeSubtitle}>
-              Bem-vindo ao Condomínio Santa Cecília
+              Bem-vindo ao Condomínio Fácil
             </Text>
           </View>
           

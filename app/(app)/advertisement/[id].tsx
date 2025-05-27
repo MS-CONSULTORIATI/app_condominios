@@ -243,7 +243,7 @@ export default function AdvertisementDetailScreen() {
           },
           {
             text: 'WhatsApp',
-            onPress: () => Linking.openURL(`https://wa.me/55${advertisement.ownerContact.replace(/\D/g, '')}?text=Olá! Vi seu anúncio "${advertisement.title}" no app do Condomínio Santa Cecília e tenho interesse.`)
+            onPress: () => Linking.openURL(`https://wa.me/55${advertisement.ownerContact.replace(/\D/g, '')}?text=Olá! Vi seu anúncio "${advertisement.title}" no app do Condomínio Fácil e tenho interesse.`)
           },
           {
             text: 'Cancelar',
@@ -261,7 +261,7 @@ export default function AdvertisementDetailScreen() {
       // Remover todos os caracteres não numéricos do número de telefone
       const phoneNumber = advertisement.ownerContact.replace(/\D/g, '');
       // Criar mensagem pré-formatada
-      const message = `Olá! Vi seu anúncio "${advertisement.title}" no app do Condomínio Santa Cecília e tenho interesse.`;
+      const message = `Olá! Vi seu anúncio "${advertisement.title}" no app do Condomínio Fácil e tenho interesse.`;
       // Abrir WhatsApp com o número e mensagem
       Linking.openURL(`https://wa.me/55${phoneNumber}?text=${encodeURIComponent(message)}`);
     } else {

@@ -210,6 +210,9 @@ Se encontrar erros durante o build:
     npx expo build:android -t apk
 
   cd android -  gradlew assembleRelease
+  .\gradlew bundleRelease
+  keytool -list -v -keystore my-release-key.jks
+  
 
 
 

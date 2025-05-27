@@ -55,7 +55,7 @@ jobs:
       - name: Upload to Google Play Internal Test
         uses: r0adkll/upload-google-play@v1
         with:
-          packageName: br.com.condominio.cecilia
+          packageName: br.com.condominio.facil
           releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
           track: internal
           status: draft 

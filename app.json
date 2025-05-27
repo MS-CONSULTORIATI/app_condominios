@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Condomínio Santa Cecília",
-    "slug": "condominio-cecilia",
+    "name": "Condomínio Facil",
+    "slug": "condominio-facil",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "br.com.condominio.cecilia",
+      "bundleIdentifier": "br.com.condominio.facil",
       "infoPlist": {
         "NSFaceIDUsageDescription": "Este aplicativo usa Face ID / Touch ID para autenticação biométrica.",
         "NSCameraUsageDescription": "Este aplicativo precisa de acesso à sua câmera para tirar fotos para seu perfil.",
@@ -31,7 +31,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#1E3A8A"
       },
-      "package": "br.com.condominio.cecilia",
+      "package": "br.com.condominio.facil",
       "permissions": [
         "USE_BIOMETRIC",
         "USE_FINGERPRINT",
@@ -75,7 +75,7 @@
       [
         "expo-local-authentication",
         {
-          "faceIDPermission": "Permitir que o Condomínio Santa Cecília use Face ID para autenticação."
+          "faceIDPermission": "Permitir que o Condomínio Fácil use Face ID para autenticação."
         }
       ],
       [

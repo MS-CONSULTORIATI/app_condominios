@@ -247,7 +247,7 @@ export default function LoginScreen() {
             entering={FadeIn.duration(800).delay(300)}
             style={styles.appName}
           >
-            Condomínio Santa Cecília
+            Condomínio Fácil
           </Animated.Text>
           <Animated.Text 
             entering={FadeIn.duration(800).delay(500)}

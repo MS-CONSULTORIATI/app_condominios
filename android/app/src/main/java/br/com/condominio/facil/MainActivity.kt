@@ -1,4 +1,4 @@
-package br.com.condominio.cecilia
+package br.com.condominio.facil
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build
