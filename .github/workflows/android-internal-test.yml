@@ -32,7 +32,7 @@ jobs:
           java-version: 17
 
       - name: Decode Keystore
-        run: echo "${{ secrets.KEYSTORE_FILE }}" | base64 -d > android/app/my-release-key.jks
+        run: echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > android/app/my-release-key.jks
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
@@ -47,7 +47,7 @@ jobs:
       - name: Build Release AAB
         run: cd android && ./gradlew bundleRelease
         env:
-          MYAPP_UPLOAD_STORE_FILE: my-release-key.jks
+          MYAPP_UPLOAD_STORE_FILE: android/app/my-release-key.jks
           MYAPP_UPLOAD_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           MYAPP_UPLOAD_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           MYAPP_UPLOAD_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
