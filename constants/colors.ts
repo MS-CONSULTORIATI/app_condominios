@@ -13,6 +13,7 @@ export default {
   success: "#10B981",
   warning: "#FBBF24",
   error: "#EF4444",
+  white: "#FFFFFF",
   gray: {
     100: "#F3F4F6",
     200: "#E5E7EB",

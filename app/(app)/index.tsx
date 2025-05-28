@@ -395,6 +395,14 @@ export default function HomeScreen() {
     });
     
     baseServices.push({
+      title: "Rede Social",
+      description: "Conecte-se com seus vizinhos e compartilhe momentos",
+      icon: <Users size={24} color={Colors.tertiary} />,
+      color: Colors.tertiary,
+      onPress: () => router.push('/social' as any),
+    });
+    
+    baseServices.push({
       title: "Achados e Perdidos",
       description: "Itens perdidos e encontrados no condomínio",
       icon: <Search size={24} color="#0EA5E9" />,

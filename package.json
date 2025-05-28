@@ -3,7 +3,7 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
-    "start": "expo start --dev-client --clear",
+    "start": "expo start --dev-client",
     "start-web": "expo start --web --tunnel",
     "start-web-dev": "DEBUG=expo* expo start --web --tunnel",
     "build:android": "npx expo prebuild --clean -p android && cd android && gradlew.bat clean && ./gradlew assembleRelease --stacktrace",

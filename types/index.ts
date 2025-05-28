@@ -329,3 +329,36 @@ export interface NewsComment {
   userUnit?: string;
   userAvatar?: string;
 }
+
+export interface SocialPost {
+  id: string;
+  content: string;
+  images?: string[];
+  createdAt: number;
+  createdBy: string;
+  userName: string;
+  userAvatar?: string;
+  userUnit?: string;
+  likes: string[]; // Array de IDs de usuários que deram like
+  likeCount: number;
+  comments: SocialComment[];
+  commentCount: number;
+  mentions?: string[]; // Array de IDs de usuários mencionados
+  isEdited?: boolean;
+  editedAt?: number;
+}
+
+export interface SocialComment {
+  id: string;
+  text: string;
+  createdAt: number;
+  createdBy: string;
+  userName: string;
+  userAvatar?: string;
+  userUnit?: string;
+  likes: string[]; // Array de IDs de usuários que deram like no comentário
+  likeCount: number;
+  mentions?: string[]; // Array de IDs de usuários mencionados no comentário
+  replyTo?: string; // ID do comentário ao qual está respondendo
+  replies?: SocialComment[]; // Respostas a este comentário
+}

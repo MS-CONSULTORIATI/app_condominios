@@ -296,7 +296,7 @@ export default function AppLayout() {
           options={{
             title: 'Início',
             drawerIcon: ({ color }) => <Home size={24} color={color} />,
-            headerTitle: 'Fácil',
+            headerTitle: 'Condomínio Fácil',
           }}
         />
         

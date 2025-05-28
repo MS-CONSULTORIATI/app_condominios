@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, ActivityIndicator, RefreshControl, ScrollView } from 'react-native';
 import { router, useFocusEffect, Stack } from 'expo-router';
-import { FontAwesome, Ionicons } from '@expo/vector-icons';
+import { FontAwesome } from '@expo/vector-icons';
 import { getLostAndFoundItems, getUserProfile } from '@/lib/firebase';
 import { LostAndFoundItem } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
@@ -130,13 +130,10 @@ export default function LostAndFoundScreen() {
             </View>
             
             <Text style={styles.itemInfo}>
-              <Ionicons name="time-outline" size={14} color="#666" /> {timeAgo}
+              <Text style={styles.timeIcon}>🕒</Text> {timeAgo}
             </Text>
             <Text style={styles.itemInfo}>
               <User size={14} color="#666" /> {userName}
-            </Text>
-            <Text style={styles.itemInfo}>
-              <FontAwesome name="home" size={14} color="#666" /> Casa/Apto: {item.house}
             </Text>
           </View>
           
@@ -477,5 +474,10 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginLeft: 6,
     flex: 1,
+  },
+  timeIcon: {
+    fontSize: 14,
+    color: '#666',
+    marginRight: 4,
   },
 }); 

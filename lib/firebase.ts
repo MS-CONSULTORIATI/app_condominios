@@ -40,7 +40,7 @@ import {
 } from 'firebase/messaging';
 import { getStorage, ref, uploadBytes, getDownloadURL, uploadString } from 'firebase/storage';
 import { Platform } from 'react-native';
-import { User, Topic, Problem, Suggestion, Resident, FirebaseNotification, Financial, LostAndFoundItem, TopicComment, News, NewsComment } from '@/types';
+import { User, Topic, Problem, Suggestion, Resident, FirebaseNotification, Financial, LostAndFoundItem, TopicComment, News, NewsComment, SocialPost, SocialComment } from '@/types';
 import * as FileSystem from 'expo-file-system';
 import { createNotificationOnce } from './createNotification'; // Adicionar esta linha no topo do arquivo
 
@@ -3107,4 +3107,277 @@ export const updateCondominiumInfo = async (data: Partial<CondominiumInfo>) => {
     console.error('Erro ao atualizar informações do condomínio:', error);
     throw error;
   }
+};
+
+// Social Posts functions
+export const getSocialPosts = async (): Promise<SocialPost[]> => {
+  try {
+    const postsRef = collection(db, 'socialPosts');
+    const q = query(postsRef, orderBy('createdAt', 'desc'));
+    const querySnapshot = await getDocs(q);
+    
+    const posts: SocialPost[] = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      posts.push({
+        id: doc.id,
+        ...data,
+        comments: data.comments || [],
+        likes: data.likes || [],
+        likeCount: data.likeCount || 0,
+        commentCount: data.commentCount || 0,
+      } as SocialPost);
+    });
+    
+    return posts;
+  } catch (error) {
+    console.error('Erro ao buscar posts sociais:', error);
+    throw error;
+  }
+};
+
+export const createSocialPost = async (postData: Omit<SocialPost, 'id' | 'createdAt' | 'likes' | 'likeCount' | 'comments' | 'commentCount'>) => {
+  try {
+    const postsRef = collection(db, 'socialPosts');
+    
+    // Primeiro, criar o post para obter o ID
+    const tempPost = {
+      ...postData,
+      createdAt: Date.now(),
+      likes: [],
+      likeCount: 0,
+      comments: [],
+      commentCount: 0,
+      images: [], // Inicialmente vazio
+    };
+    
+    const docRef = await addDoc(postsRef, tempPost);
+    const postId = docRef.id;
+    
+    // Upload das imagens se houver
+    let uploadedImages: string[] = [];
+    if (postData.images && postData.images.length > 0) {
+      try {
+        const imagePromises = postData.images.map(imageUri => 
+          uploadSocialPostImage(imageUri, postId)
+        );
+        uploadedImages = await Promise.all(imagePromises);
+        
+        // Atualizar o post com as URLs das imagens
+        await updateDoc(docRef, { images: uploadedImages });
+      } catch (uploadError) {
+        console.error('Erro durante o upload de imagens:', uploadError);
+        // Manter o post mesmo se o upload falhar
+      }
+    }
+    
+    // Criar notificação para usuários mencionados
+    if (postData.mentions && postData.mentions.length > 0) {
+      for (const mentionedUserId of postData.mentions) {
+        await createNotification({
+          title: 'Você foi mencionado',
+          message: `${postData.userName} mencionou você em um post`,
+          type: 'system',
+          targetUserId: mentionedUserId,
+          relatedItemId: postId,
+        });
+      }
+    }
+    
+    return postId;
+  } catch (error) {
+    console.error('Erro ao criar post social:', error);
+    throw error;
+  }
+};
+
+export const toggleSocialPostLike = async (postId: string, userId: string) => {
+  try {
+    const postRef = doc(db, 'socialPosts', postId);
+    const postDoc = await getDoc(postRef);
+    
+    if (!postDoc.exists()) {
+      throw new Error('Post não encontrado');
+    }
+    
+    const postData = postDoc.data() as SocialPost;
+    const likes = postData.likes || [];
+    const hasLiked = likes.includes(userId);
+    
+    let updatedLikes: string[];
+    if (hasLiked) {
+      updatedLikes = likes.filter(id => id !== userId);
+    } else {
+      updatedLikes = [...likes, userId];
+    }
+    
+    await updateDoc(postRef, {
+      likes: updatedLikes,
+      likeCount: updatedLikes.length,
+    });
+    
+    return !hasLiked;
+  } catch (error) {
+    console.error('Erro ao dar like no post:', error);
+    throw error;
+  }
+};
+
+export const addSocialPostComment = async (postId: string, commentData: Omit<SocialComment, 'id' | 'createdAt' | 'likes' | 'likeCount'>) => {
+  try {
+    const postRef = doc(db, 'socialPosts', postId);
+    const postDoc = await getDoc(postRef);
+    
+    if (!postDoc.exists()) {
+      throw new Error('Post não encontrado');
+    }
+    
+    const postData = postDoc.data() as SocialPost;
+    const comments = postData.comments || [];
+    
+    const newComment: SocialComment = {
+      ...commentData,
+      id: Date.now().toString(),
+      createdAt: Date.now(),
+      likes: [],
+      likeCount: 0,
+    };
+    
+    const updatedComments = [...comments, newComment];
+    
+    await updateDoc(postRef, {
+      comments: updatedComments,
+      commentCount: updatedComments.length,
+    });
+    
+    // Criar notificação para o autor do post
+    if (commentData.createdBy !== postData.createdBy) {
+      await createNotification({
+        title: 'Novo comentário',
+        message: `${commentData.userName} comentou no seu post`,
+        type: 'system',
+        targetUserId: postData.createdBy,
+        relatedItemId: postId,
+      });
+    }
+    
+    // Criar notificação para usuários mencionados no comentário
+    if (commentData.mentions && commentData.mentions.length > 0) {
+      for (const mentionedUserId of commentData.mentions) {
+        if (mentionedUserId !== commentData.createdBy) {
+          await createNotification({
+            title: 'Você foi mencionado',
+            message: `${commentData.userName} mencionou você em um comentário`,
+            type: 'system',
+            targetUserId: mentionedUserId,
+            relatedItemId: postId,
+          });
+        }
+      }
+    }
+    
+    return newComment.id;
+  } catch (error) {
+    console.error('Erro ao adicionar comentário:', error);
+    throw error;
+  }
+};
+
+export const toggleSocialCommentLike = async (postId: string, commentId: string, userId: string) => {
+  try {
+    const postRef = doc(db, 'socialPosts', postId);
+    const postDoc = await getDoc(postRef);
+    
+    if (!postDoc.exists()) {
+      throw new Error('Post não encontrado');
+    }
+    
+    const postData = postDoc.data() as SocialPost;
+    const comments = postData.comments || [];
+    
+    const updatedComments = comments.map(comment => {
+      if (comment.id === commentId) {
+        const likes = comment.likes || [];
+        const hasLiked = likes.includes(userId);
+        
+        let updatedLikes: string[];
+        if (hasLiked) {
+          updatedLikes = likes.filter(id => id !== userId);
+        } else {
+          updatedLikes = [...likes, userId];
+        }
+        
+        return {
+          ...comment,
+          likes: updatedLikes,
+          likeCount: updatedLikes.length,
+        };
+      }
+      return comment;
+    });
+    
+    await updateDoc(postRef, {
+      comments: updatedComments,
+    });
+    
+    const comment = comments.find(c => c.id === commentId);
+    return comment ? !comment.likes?.includes(userId) : false;
+  } catch (error) {
+    console.error('Erro ao dar like no comentário:', error);
+    throw error;
+  }
+};
+
+export const uploadSocialPostImage = async (uri: string, postId: string): Promise<string> => {
+  try {
+    console.log('Iniciando upload da imagem do post social:', uri);
+    
+    // Para mobile e web, usar fetch para obter o blob
+    const response = await fetch(uri);
+    const blob = await response.blob();
+    
+    // Upload para Firebase Storage usando o blob diretamente
+    const imageRef = ref(storage, `socialPosts/${postId}/${Date.now()}.jpg`);
+    await uploadBytes(imageRef, blob);
+    
+    // Obter URL de download
+    const downloadURL = await getDownloadURL(imageRef);
+    console.log('Upload da imagem do post social concluído:', downloadURL);
+    
+    return downloadURL;
+  } catch (error) {
+    console.error('Erro ao fazer upload da imagem do post social:', error);
+    throw error;
+  }
+};
+
+export const deleteSocialPost = async (postId: string) => {
+  try {
+    const postRef = doc(db, 'socialPosts', postId);
+    await deleteDoc(postRef);
+  } catch (error) {
+    console.error('Erro ao deletar post social:', error);
+    throw error;
+  }
+};
+
+export const subscribeToSocialPosts = (callback: (posts: SocialPost[]) => void) => {
+  const postsRef = collection(db, 'socialPosts');
+  const q = query(postsRef, orderBy('createdAt', 'desc'));
+  
+  return onSnapshot(q, (querySnapshot) => {
+    const posts: SocialPost[] = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      posts.push({
+        id: doc.id,
+        ...data,
+        comments: data.comments || [],
+        likes: data.likes || [],
+        likeCount: data.likeCount || 0,
+        commentCount: data.commentCount || 0,
+      } as SocialPost);
+    });
+    callback(posts);
+  });
 };
