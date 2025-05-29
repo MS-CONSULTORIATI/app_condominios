@@ -35,6 +35,7 @@ jobs:
         run: echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > android/app/my-release-key.jks
 
       - name: Authenticate to Google Cloud
+        id: auth
         uses: google-github-actions/auth@v2
         with:
           token_format: 'access_token'
@@ -55,6 +56,7 @@ jobs:
       - name: Upload to Google Play Internal Test
         uses: r0adkll/upload-google-play@v1
         with:
+          serviceAccountJson: ${{ steps.auth.outputs.credentials_file_path }}
           packageName: br.com.condominio.facil
           releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
           track: internal

@@ -2,7 +2,7 @@
   "expo": {
     "name": "Condomínio Facil",
     "slug": "condominio-facil",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
@@ -24,7 +24,7 @@
           "remote-notification"
         ]
       },
-      "runtimeVersion": "1.0.0"
+      "runtimeVersion": "1.0.1"
     },
     "android": {
       "adaptiveIcon": {
@@ -59,7 +59,7 @@
         "android.permission.WRITE_EXTERNAL_STORAGE"
       ],
       "googleServicesFile": "./google-services.json",
-      "runtimeVersion": "1.0.0",
+      "runtimeVersion": "1.0.1",
       "useNextNotificationsApi": true
     },
     "web": {

@@ -2,7 +2,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'resident' | 'manager' | 'admin' | 'visitor';
+  role: 'resident' | 'manager' | 'admin' | 'visitor' | 'doorman';
   apartment?: string;
   block?: string;
   unit?: string;
@@ -142,7 +142,7 @@ export interface FirebaseNotification {
   id: string;
   title: string;
   message: string;
-  type: 'topic' | 'problem' | 'suggestion' | 'system' | 'financial' | 'advertisement' | 'lostandfound';
+  type: 'topic' | 'problem' | 'suggestion' | 'system' | 'financial' | 'advertisement' | 'lostandfound' | 'social' | 'package';
   relatedItemId?: string;
   targetUserId?: string; // ID do usuário específico para quem a notificação é direcionada
   createdAt: number;
@@ -361,4 +361,36 @@ export interface SocialComment {
   mentions?: string[]; // Array de IDs de usuários mencionados no comentário
   replyTo?: string; // ID do comentário ao qual está respondendo
   replies?: SocialComment[]; // Respostas a este comentário
+}
+
+export interface Package {
+  id: string;
+  recipientId: string; // ID do usuário que vai receber
+  recipientName: string;
+  recipientUnit: string;
+  recipientPhone?: string;
+  senderName?: string; // Nome do remetente/empresa
+  description: string;
+  observations?: string;
+  photos?: string[];
+  status: 'pending' | 'delivered' | 'returned';
+  createdAt: number;
+  createdBy: string; // ID do porteiro
+  createdByName: string; // Nome do porteiro
+  deliveredAt?: number;
+  deliveredBy?: string; // ID do porteiro que entregou
+  deliveredByName?: string; // Nome do porteiro que entregou
+  signature?: string; // Assinatura digital do recebedor
+  signedBy?: string; // Nome de quem assinou
+  returnedAt?: number;
+  returnReason?: string;
+  updatedAt?: number;
+}
+
+export interface PackageSignature {
+  packageId: string;
+  signature: string; // Base64 da assinatura
+  signedBy: string; // Nome de quem assinou
+  signedAt: number;
+  deliveredBy: string; // ID do porteiro
 }

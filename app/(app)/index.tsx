@@ -13,6 +13,8 @@ import LoadingIndicator from '@/components/LoadingIndicator';
 import ServiceCard from '@/components/ServiceCard';
 import MeetingAlert from '@/components/MeetingAlert';
 import NewsCarousel from '@/components/NewsCarousel';
+import PackageCard from '@/components/PackageCard';
+import PendingPackagesCard from '@/components/PendingPackagesCard';
 import Colors from '@/constants/colors';
 import { 
   ClipboardList, 
@@ -41,6 +43,7 @@ import {
   Search
 } from 'lucide-react-native';
 import { News, Topic } from '@/types';
+import { getPackages, getPackagesByRecipient } from '@/lib/firebase';
 
 const HIDDEN_NEWS_STORAGE_KEY = 'hidden_news_ids';
 
@@ -59,10 +62,35 @@ export default function HomeScreen() {
   const [recentNews, setRecentNews] = useState<News[]>([]);
   const [hiddenNewsIds, setHiddenNewsIds] = useState<string[]>([]);
   const [showHiddenNews, setShowHiddenNews] = useState(false);
+  const [pendingPackagesCount, setPendingPackagesCount] = useState(0);
+  const [totalUserPackagesCount, setTotalUserPackagesCount] = useState(0);
 
   // Debug para verificar se o usuário é reconhecido como admin
   console.log('User role:', user?.role);
   console.log('Is admin:', isAdmin);
+
+  // Function to load package data
+  const loadPackageData = useCallback(async () => {
+    if (!user) return;
+    
+    try {
+      if (user.role === 'doorman' || user.role === 'admin' || user.role === 'manager') {
+        // For doormen, managers and admins, get all pending packages
+        const allPackages = await getPackages();
+        const pendingCount = allPackages.filter(pkg => pkg.status === 'pending').length;
+        setPendingPackagesCount(pendingCount);
+        setTotalUserPackagesCount(0); // Not relevant for doormen/managers
+      } else {
+        // For residents, get their packages (all statuses)
+        const userPackages = await getPackagesByRecipient(user.id);
+        const pendingCount = userPackages.filter(pkg => pkg.status === 'pending').length;
+        setPendingPackagesCount(pendingCount);
+        setTotalUserPackagesCount(userPackages.length);
+      }
+    } catch (error) {
+      console.error('Error loading package data:', error);
+    }
+  }, [user]);
 
   // Function to refresh all data
   const refreshData = useCallback(async () => {
@@ -79,7 +107,8 @@ export default function HomeScreen() {
         }),
         fetchNews().then(() => {
           setRecentNews(getRecentNews());
-        })
+        }),
+        loadPackageData()
       ]);
       
       console.log('Data refresh complete');
@@ -89,7 +118,7 @@ export default function HomeScreen() {
     } finally {
       setRefreshing(false);
     }
-  }, [fetchTopics, fetchMeetings, fetchDebtors, fetchNews, getStats, getRecentNews]);
+  }, [fetchTopics, fetchMeetings, fetchDebtors, fetchNews, getStats, getRecentNews, loadPackageData]);
 
   // Pull-to-refresh handler
   const onRefresh = useCallback(() => {
@@ -184,6 +213,16 @@ export default function HomeScreen() {
     
     if (serviceName === "Anúncios") {
       router.push('/advertisements');
+      return;
+    }
+    
+    if (serviceName === "Encomendas") {
+      // Redirecionar baseado no papel do usuário
+      if (user?.role === 'doorman' || user?.role === 'admin' || user?.role === 'manager') {
+        router.push('/(app)/packages' as any);
+      } else {
+        router.push('/(app)/packages/my-packages' as any);
+      }
       return;
     }
     
@@ -578,6 +617,12 @@ export default function HomeScreen() {
             </TouchableOpacity>
           )}
         </View>
+      )}
+      
+     
+      {/* Pending Packages Card for Residents */}
+      {user?.role === 'resident' && pendingPackagesCount > 0 && (
+        <PendingPackagesCard pendingCount={pendingPackagesCount} />
       )}
       
       {/* Topics Section */}

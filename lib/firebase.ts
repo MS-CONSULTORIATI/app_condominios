@@ -40,7 +40,7 @@ import {
 } from 'firebase/messaging';
 import { getStorage, ref, uploadBytes, getDownloadURL, uploadString } from 'firebase/storage';
 import { Platform } from 'react-native';
-import { User, Topic, Problem, Suggestion, Resident, FirebaseNotification, Financial, LostAndFoundItem, TopicComment, News, NewsComment, SocialPost, SocialComment } from '@/types';
+import { User, Topic, Problem, Suggestion, Resident, FirebaseNotification, Financial, LostAndFoundItem, TopicComment, News, NewsComment, SocialPost, SocialComment, Package } from '@/types';
 import * as FileSystem from 'expo-file-system';
 import { createNotificationOnce } from './createNotification'; // Adicionar esta linha no topo do arquivo
 
@@ -96,7 +96,7 @@ export const requestNotificationPermission = async () => {
     const permission = await Notification.requestPermission();
     if (permission === 'granted') {
       const token = await getToken(messaging, {
-        vapidKey: 'BMlGigbVAWwCU_NrfF2YwBZMeHoG4SnAoAvNznCo-zxGplo7F6GY2zWTmS2gLqHfmCp_HT8nCM2Dr7yZUJ9CwNo' // Replace with your VAPID key
+        vapidKey: 'BFkCI7G4xoVAk35uTNtn-uFhUdg-kTzQGr3SoSnmYlaaFYsvSDPAPxTkIvnANdPF_7QAqSojOqmZIiE4BhDc7HM' // Replace with your VAPID key
       });
       return token;
     }
@@ -367,7 +367,7 @@ export const getTopics = async (): Promise<Topic[]> => {
       id: doc.id, 
       ...topicData,
       commentsCount
-    } as Topic;
+    } as Topic & { commentsCount: number };
   });
   
   // Buscar dados dos usuários para cada tópico
@@ -605,6 +605,7 @@ const mockProblems: Problem[] = [
     title: 'Vazamento no 3º andar',
     description: 'Há um vazamento de água no corredor do 3º andar, próximo ao apartamento 302. A água está escorrendo pela parede e formando poças no chão.',
     location: 'Bloco A, 3º andar',
+    priority: 'high',
     status: 'pending',
     createdAt: Date.now() - 2 * 24 * 60 * 60 * 1000, // 2 days ago
     createdBy: 'resident1',
@@ -614,6 +615,7 @@ const mockProblems: Problem[] = [
     title: 'Lâmpada queimada na garagem',
     description: 'A lâmpada da vaga 15 na garagem está queimada há uma semana, dificultando o acesso ao veículo durante a noite.',
     location: 'Garagem, vaga 15',
+    priority: 'medium',
     status: 'in_progress',
     createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000, // 5 days ago
     createdBy: 'resident2',
@@ -624,6 +626,7 @@ const mockProblems: Problem[] = [
     title: 'Interfone com mau funcionamento',
     description: 'O interfone do apartamento 405 está com problemas, às vezes não toca quando alguém chama da portaria.',
     location: 'Bloco B, apartamento 405',
+    priority: 'medium',
     status: 'pending',
     createdAt: Date.now() - 1 * 24 * 60 * 60 * 1000, // 1 day ago
     createdBy: 'resident3',
@@ -633,6 +636,7 @@ const mockProblems: Problem[] = [
     title: 'Portão da garagem travando',
     description: 'O portão da garagem está travando frequentemente, causando filas de carros e atrasos para os moradores.',
     location: 'Entrada da garagem',
+    priority: 'high',
     status: 'resolved',
     createdAt: Date.now() - 15 * 24 * 60 * 60 * 1000, // 15 days ago
     createdBy: 'resident4',
@@ -3148,7 +3152,7 @@ export const createSocialPost = async (postData: Omit<SocialPost, 'id' | 'create
       likeCount: 0,
       comments: [],
       commentCount: 0,
-      images: [], // Inicialmente vazio
+      images: [], // Inicialmente vazio,
     };
     
     const docRef = await addDoc(postsRef, tempPost);
@@ -3171,13 +3175,25 @@ export const createSocialPost = async (postData: Omit<SocialPost, 'id' | 'create
       }
     }
     
+    // Criar notificação para todos os usuários sobre o novo post
+    await createNotificationOnce(
+      {
+        title: 'Nova Postagem na Rede Social',
+        message: `${postData.userName} compartilhou algo novo na comunidade`,
+        type: 'social',
+        relatedItemId: postId,
+      },
+      createNotification,
+      postData.createdBy
+    );
+    
     // Criar notificação para usuários mencionados
     if (postData.mentions && postData.mentions.length > 0) {
       for (const mentionedUserId of postData.mentions) {
         await createNotification({
           title: 'Você foi mencionado',
           message: `${postData.userName} mencionou você em um post`,
-          type: 'system',
+          type: 'social',
           targetUserId: mentionedUserId,
           relatedItemId: postId,
         });
@@ -3255,7 +3271,7 @@ export const addSocialPostComment = async (postId: string, commentData: Omit<Soc
       await createNotification({
         title: 'Novo comentário',
         message: `${commentData.userName} comentou no seu post`,
-        type: 'system',
+        type: 'social',
         targetUserId: postData.createdBy,
         relatedItemId: postId,
       });
@@ -3268,7 +3284,7 @@ export const addSocialPostComment = async (postId: string, commentData: Omit<Soc
           await createNotification({
             title: 'Você foi mencionado',
             message: `${commentData.userName} mencionou você em um comentário`,
-            type: 'system',
+            type: 'social',
             targetUserId: mentionedUserId,
             relatedItemId: postId,
           });
@@ -3379,5 +3395,302 @@ export const subscribeToSocialPosts = (callback: (posts: SocialPost[]) => void) 
       } as SocialPost);
     });
     callback(posts);
+  });
+};
+
+// Package functions
+export const getPackages = async (): Promise<Package[]> => {
+  try {
+    const packagesRef = collection(db, 'packages');
+    const querySnapshot = await getDocs(packagesRef);
+    
+    const packages: Package[] = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      packages.push({
+        id: doc.id,
+        ...data,
+      } as Package);
+    });
+    
+    // Ordenar no lado do cliente por createdAt (mais recente primeiro)
+    packages.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    
+    return packages;
+  } catch (error) {
+    console.error('Erro ao buscar encomendas:', error);
+    throw error;
+  }
+};
+
+export const getPackagesByRecipient = async (recipientId: string): Promise<Package[]> => {
+  try {
+    const packagesRef = collection(db, 'packages');
+    const q = query(
+      packagesRef, 
+      where('recipientId', '==', recipientId)
+    );
+    const querySnapshot = await getDocs(q);
+    
+    const packages: Package[] = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      packages.push({
+        id: doc.id,
+        ...data,
+      } as Package);
+    });
+    
+    // Ordenar no lado do cliente por createdAt (mais recente primeiro)
+    packages.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    
+    return packages;
+  } catch (error) {
+    console.error('Erro ao buscar encomendas do usuário:', error);
+    throw error;
+  }
+};
+
+export const getPackageById = async (packageId: string): Promise<Package | null> => {
+  try {
+    const packageRef = doc(db, 'packages', packageId);
+    const packageSnap = await getDoc(packageRef);
+    
+    if (!packageSnap.exists()) {
+      return null;
+    }
+    
+    const data = packageSnap.data();
+    return {
+      id: packageSnap.id,
+      ...data,
+    } as Package;
+  } catch (error) {
+    console.error(`Erro ao buscar encomenda ${packageId}:`, error);
+    throw error;
+  }
+};
+
+export const uploadPackageImage = async (uri: string, packageId: string): Promise<string> => {
+  try {
+    console.log('Iniciando upload da imagem da encomenda:', uri);
+    
+    // Para mobile e web, usar fetch para obter o blob
+    const response = await fetch(uri);
+    const blob = await response.blob();
+    
+    // Upload para Firebase Storage usando o blob diretamente
+    const imageRef = ref(storage, `packages/${packageId}/${Date.now()}.jpg`);
+    await uploadBytes(imageRef, blob);
+    
+    // Obter URL de download
+    const downloadURL = await getDownloadURL(imageRef);
+    console.log('Upload da imagem da encomenda concluído:', downloadURL);
+    
+    return downloadURL;
+  } catch (error) {
+    console.error('Erro ao fazer upload da imagem da encomenda:', error);
+    throw error;
+  }
+};
+
+export const createPackage = async (packageData: Omit<Package, 'id' | 'createdAt' | 'updatedAt'>) => {
+  try {
+    const packagesRef = collection(db, 'packages');
+    
+    // Primeiro, criar a encomenda para obter o ID
+    const tempPackage = {
+      ...packageData,
+      createdAt: Date.now(),
+      photos: [], // Inicialmente vazio
+    };
+    
+    const docRef = await addDoc(packagesRef, tempPackage);
+    const packageId = docRef.id;
+    
+    // Upload das imagens se houver
+    let uploadedImages: string[] = [];
+    if (packageData.photos && packageData.photos.length > 0) {
+      try {
+        const imagePromises = packageData.photos.map(imageUri => 
+          uploadPackageImage(imageUri, packageId)
+        );
+        uploadedImages = await Promise.all(imagePromises);
+        
+        // Atualizar a encomenda com as URLs das imagens
+        await updateDoc(docRef, { photos: uploadedImages });
+      } catch (uploadError) {
+        console.error('Erro durante o upload de imagens:', uploadError);
+        // Manter a encomenda mesmo se o upload falhar
+      }
+    }
+    
+    // Criar notificação para o destinatário
+    await createNotification({
+      title: 'Nova Encomenda Chegou',
+      message: `Você tem uma nova encomenda na portaria. ${packageData.description}`,
+      type: 'package',
+      targetUserId: packageData.recipientId,
+      relatedItemId: packageId,
+    });
+    
+    return packageId;
+  } catch (error) {
+    console.error('Erro ao criar encomenda:', error);
+    throw error;
+  }
+};
+
+export const updatePackage = async (packageId: string, packageData: Partial<Package>) => {
+  try {
+    const packageRef = doc(db, 'packages', packageId);
+    
+    const updatedData = {
+      ...packageData,
+      updatedAt: Date.now(),
+    };
+    
+    // Se houver novas fotos, fazer upload
+    if (packageData.photos && packageData.photos.length > 0) {
+      const newImageUris = packageData.photos.filter(uri => 
+        uri && (uri.startsWith('file:') || uri.startsWith('content:') || uri.startsWith('blob:'))
+      );
+      
+      const existingImageUrls = packageData.photos.filter(uri => 
+        uri && !uri.startsWith('file:') && !uri.startsWith('content:') && !uri.startsWith('blob:')
+      );
+      
+      if (newImageUris.length > 0) {
+        try {
+          const uploadPromises = newImageUris.map(uri => 
+            uploadPackageImage(uri, packageId)
+          );
+          
+          const newImageUrls = await Promise.all(uploadPromises);
+          const validNewUrls = newImageUrls.filter(url => url && url.length > 0);
+          updatedData.photos = [...existingImageUrls, ...validNewUrls];
+        } catch (uploadError) {
+          console.error('Erro durante o upload de novas imagens:', uploadError);
+          updatedData.photos = existingImageUrls;
+        }
+      } else {
+        updatedData.photos = existingImageUrls;
+      }
+    }
+    
+    await updateDoc(packageRef, updatedData);
+    
+    // Se o status foi alterado para entregue, notificar o destinatário
+    if (packageData.status === 'delivered') {
+      const packageDoc = await getDoc(packageRef);
+      if (packageDoc.exists()) {
+        const data = packageDoc.data() as Package;
+        await createNotification({
+          title: 'Encomenda Entregue',
+          message: `Sua encomenda foi entregue com sucesso.`,
+          type: 'package',
+          targetUserId: data.recipientId,
+          relatedItemId: packageId,
+        });
+      }
+    }
+    
+    return packageId;
+  } catch (error) {
+    console.error('Erro ao atualizar encomenda:', error);
+    throw error;
+  }
+};
+
+export const deliverPackage = async (packageId: string, signature: string, signedBy: string, deliveredBy: string, deliveredByName: string) => {
+  try {
+    const packageRef = doc(db, 'packages', packageId);
+    
+    const deliveryData = {
+      status: 'delivered' as const,
+      deliveredAt: Date.now(),
+      deliveredBy,
+      deliveredByName,
+      signature,
+      signedBy,
+      updatedAt: Date.now(),
+    };
+    
+    await updateDoc(packageRef, deliveryData);
+    
+    // Buscar dados da encomenda para notificação
+    const packageDoc = await getDoc(packageRef);
+    if (packageDoc.exists()) {
+      const data = packageDoc.data() as Package;
+      
+      // Notificar o destinatário sobre a entrega
+      await createNotification({
+        title: 'Encomenda Entregue',
+        message: `Sua encomenda foi entregue e assinada por ${signedBy}.`,
+        type: 'package',
+        targetUserId: data.recipientId,
+        relatedItemId: packageId,
+      });
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Erro ao entregar encomenda:', error);
+    throw error;
+  }
+};
+
+export const deletePackage = async (packageId: string) => {
+  try {
+    const packageRef = doc(db, 'packages', packageId);
+    await deleteDoc(packageRef);
+    return true;
+  } catch (error) {
+    console.error('Erro ao deletar encomenda:', error);
+    throw error;
+  }
+};
+
+export const subscribeToPackages = (callback: (packages: Package[]) => void) => {
+  const packagesRef = collection(db, 'packages');
+  
+  return onSnapshot(packagesRef, (querySnapshot) => {
+    const packages: Package[] = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      packages.push({
+        id: doc.id,
+        ...data,
+      } as Package);
+    });
+    
+    // Ordenar no lado do cliente por createdAt (mais recente primeiro)
+    packages.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    
+    callback(packages);
+  });
+};
+
+export const subscribeToUserPackages = (recipientId: string, callback: (packages: Package[]) => void) => {
+  const packagesRef = collection(db, 'packages');
+  const q = query(
+    packagesRef, 
+    where('recipientId', '==', recipientId)
+  );
+  
+  return onSnapshot(q, (querySnapshot) => {
+    const packages: Package[] = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      packages.push({
+        id: doc.id,
+        ...data,
+      } as Package);
+    });
+    
+    // Ordenar no lado do cliente por createdAt (mais recente primeiro)
+    packages.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    
+    callback(packages);
   });
 };

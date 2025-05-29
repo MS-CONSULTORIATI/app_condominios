@@ -4,7 +4,7 @@
 
 Para que as notificações push funcionem corretamente, você precisa configurar o Firebase Cloud Messaging (FCM) no projeto.
 
-### Como obter a chave do FCM Server:
+### Como obter a chave do FCM Server
 
 1. Acesse o [Console do Firebase](https://console.firebase.google.com/) e selecione seu projeto "condominio-santacecilia"
 
@@ -21,29 +21,33 @@ Para que as notificações push funcionem corretamente, você precisa configurar
 Para que as notificações push sejam enviadas quando uma nova notificação for criada no Firestore, você precisa implantar as Cloud Functions:
 
 1. Certifique-se de ter o Firebase CLI instalado:
+
    ```
    npm install -g firebase-tools
    ```
 
 2. Faça login no Firebase:
+
    ```
    firebase login
    ```
 
 3. Navegue até a pasta `functions` e instale as dependências:
+
    ```
    cd functions
    npm install
    ```
 
 4. Implante as funções:
+
    ```
    npm run deploy
    ```
 
 5. Após a implantação, verifique no console do Firebase se as funções foram implantadas com sucesso.
 
-### Configuração no Expo EAS:
+### Configuração no Expo EAS
 
 Se você estiver usando o Expo EAS (Expo Application Services):
 
@@ -83,10 +87,13 @@ Para encontrar seu Project ID do EAS, execute `eas project:list` ou acesse o [Ex
 Para testar se o sistema de notificações push está funcionando:
 
 1. Implante o aplicativo em seu dispositivo usando o Expo:
+
    ```
    eas build --profile development --platform android
    ```
-   ou 
+
+   ou
+
    ```
    eas build --profile development --platform ios
    ```
@@ -96,13 +103,14 @@ Para testar se o sistema de notificações push está funcionando:
 3. Crie uma nova pauta para testar as notificações push
 
 4. Você também pode usar a função HTTP `testPushNotification` para enviar uma notificação de teste:
+
    ```
    curl -X POST https://us-central1-condominio-santacecilia.cloudfunctions.net/testPushNotification \
      -H "Content-Type: application/json" \
      -d '{"title":"Teste de Notificação","message":"Esta é uma notificação de teste","tokens":["ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]"]}'
    ```
-   
-   Substitua o token pelo token real do seu dispositivo, que você pode ver nos logs do aplicativo. 
+
+   Substitua o token pelo token real do seu dispositivo, que você pode ver nos logs do aplicativo.
 
 ## Gerando uma Versão para iOS
 
@@ -145,6 +153,7 @@ build-ios.bat
 ```
 
 O script oferece as seguintes opções:
+
 - Build de Produção (App Store)
 - Build de Preview (TestFlight)
 - Build de Desenvolvimento
@@ -198,6 +207,7 @@ Se encontrar erros durante o build:
 4. Se os erros persistirem, consulte os logs detalhados no dashboard do EAS
 
 # Corrigir erros de dependências
+
    npx expo install --fix
 
 # Iniciar o projeto modo desenvolvedor
@@ -205,19 +215,18 @@ Se encontrar erros durante o build:
    expo start --dev-client
    eas build --profile development --platform android
    eas build --profile development --platform ios
-   
 
     npx expo build:android -t apk
 
   cd android -  gradlew assembleRelease
   .\gradlew bundleRelease
   keytool -list -v -keystore my-release-key.jks
+
+# Política de Privacidade
+
+  https://ms-consultoriati.github.io/condominio-facil-privacy/privacy-policy.html
   
-
-
-
-
-  # PodFile
+# PodFile
 
   require File.join(File.dirname(`node --print "require.resolve('expo/package.json')"`), "scripts/autolinking")
 require File.join(File.dirname(`node --print "require.resolve('react-native/package.json')"`), "scripts/react_native_pods")
