@@ -3,7 +3,7 @@ name: Android Internal Test
 on:
   push:
     branches:
-      - main
+      - condominiofacil
 
 permissions:
   id-token: write
