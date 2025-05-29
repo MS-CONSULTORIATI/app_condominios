@@ -7,7 +7,7 @@ on:
 
 permissions:
   id-token: write
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -45,6 +45,53 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x android/gradlew
 
+      - name: Increment Version Code
+        run: |
+          # Get current version code from build.gradle
+          CURRENT_VERSION=$(grep -oP 'versionCode \K\d+' android/app/build.gradle)
+          echo "Current version code: $CURRENT_VERSION"
+          
+          # Increment version code
+          NEW_VERSION=$((CURRENT_VERSION + 1))
+          echo "New version code: $NEW_VERSION"
+          
+          # Update version code in build.gradle
+          sed -i "s/versionCode $CURRENT_VERSION/versionCode $NEW_VERSION/" android/app/build.gradle
+          
+          # Also update versionName to match (optional)
+          CURRENT_VERSION_NAME=$(grep -oP 'versionName "\K[^"]+' android/app/build.gradle)
+          echo "Current version name: $CURRENT_VERSION_NAME"
+          
+          # Extract major.minor from current version name and increment patch
+          if [[ $CURRENT_VERSION_NAME =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            MAJOR=${BASH_REMATCH[1]}
+            MINOR=${BASH_REMATCH[2]}
+            PATCH=${BASH_REMATCH[3]}
+            NEW_PATCH=$((PATCH + 1))
+            NEW_VERSION_NAME="$MAJOR.$MINOR.$NEW_PATCH"
+          else
+            # If version name doesn't match pattern, just use 1.0.x format
+            NEW_VERSION_NAME="1.0.$NEW_VERSION"
+          fi
+          
+          echo "New version name: $NEW_VERSION_NAME"
+          sed -i "s/versionName \"$CURRENT_VERSION_NAME\"/versionName \"$NEW_VERSION_NAME\"/" android/app/build.gradle
+          
+          # Update app.json version to keep consistency
+          if [ -f "app.json" ]; then
+            sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$NEW_VERSION_NAME\"/" app.json
+            echo "Updated app.json version to: $NEW_VERSION_NAME"
+          fi
+          
+          # Verify changes
+          echo "Updated build.gradle version info:"
+          grep -E "(versionCode|versionName)" android/app/build.gradle
+          
+          if [ -f "app.json" ]; then
+            echo "Updated app.json version:"
+            grep -A 1 -B 1 "\"version\":" app.json
+          fi
+
       - name: Build Release AAB
         run: cd android && ./gradlew bundleRelease
         env:
@@ -61,3 +108,14 @@ jobs:
           releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
           track: internal
           status: draft 
+
+      - name: Commit version changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add android/app/build.gradle
+          if [ -f "app.json" ]; then
+            git add app.json
+          fi
+          git commit -m "Auto-increment version for build #${{ github.run_number }}" || exit 0
+          git push 
