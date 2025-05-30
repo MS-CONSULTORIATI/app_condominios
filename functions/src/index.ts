@@ -16,89 +16,116 @@ export const sendPushNotification = onDocumentCreated(
   "notifications/{notificationId}",
   async (event) => {
     try {
-      // Obter os dados da notificação
-      const snapshot: QueryDocumentSnapshot = event.data!;
-      const notificationData = snapshot.data();
+      const eventId = event.id;
+      logger.info(`[${eventId}] Nova notificação recebida. Evento ID: ${eventId}`);
 
-      if (!notificationData) {
-        logger.info("Nenhum dado de notificação encontrado");
+      const snapshot: QueryDocumentSnapshot | undefined = event.data;
+      if (!snapshot) {
+        logger.warn(`[${eventId}] Evento sem dados (event.data é undefined). Abortando.`);
         return;
       }
 
-      // Log para debug
-      logger.info("Nova notificação criada:", notificationData);
+      const notificationData = snapshot.data();
+      if (!notificationData) {
+        logger.warn(`[${eventId}] Dados da notificação não encontrados (snapshot.data() é undefined ou null). Snapshot ID: ${snapshot.id}. Abortando.`);
+        return;
+      }
+
+      logger.info(`[${eventId}] Processando notificação ID: ${snapshot.id}, Título: "${notificationData.title}", Tipo: ${notificationData.type}, Item Relacionado: ${notificationData.relatedItemId || "N/A"}`);
+
+      const creatorUserId = notificationData.creatorUserId; // ID do usuário que criou a notificação original
+      logger.info(`[${eventId}] Criador original da notificação (creatorUserId): ${creatorUserId || "Não especificado"}`);
 
       // Coletar tokens de push
       const tokens: string[] = [];
+      const userTokensMap = new Map<string, string>(); // Para evitar tokens duplicados e associar token ao usuário
 
       // Método 1: Obter tokens da coleção users
+      logger.info(`[${eventId}] Coletando tokens da coleção 'users'`);
       const usersSnapshot = await admin.firestore().collection("users").get();
-
       usersSnapshot.forEach((doc) => {
         const userData = doc.data();
+        const userId = doc.id;
+        // Excluir o criador da notificação da lista de destinatários
+        if (creatorUserId && userId === creatorUserId) {
+          logger.info(`[${eventId}] Usuário ${userId} é o criador da notificação, será ignorado.`);
+          return;
+        }
         if (userData.pushToken) {
-          tokens.push(userData.pushToken);
-          logger.info(`Token obtido do usuário: ${doc.id}`);
+          if (!userTokensMap.has(userData.pushToken)) {
+            tokens.push(userData.pushToken);
+            userTokensMap.set(userData.pushToken, userId);
+            logger.info(`[${eventId}] Token ${userData.pushToken.substring(0, 15)}... (de users/${userId}) adicionado.`);
+          } else {
+            logger.info(`[${eventId}] Token ${userData.pushToken.substring(0, 15)}... (de users/${userId}) já existe (associado a users/${userTokensMap.get(userData.pushToken)}), ignorando duplicata.`);
+          }
+        } else {
+          logger.info(`[${eventId}] Usuário ${userId} não possui pushToken.`);
         }
       });
+      logger.info(`[${eventId}] ${tokens.length} tokens únicos coletados da coleção 'users' (excluindo criador se aplicável).`);
 
-      // Método 2: Obter tokens da coleção push_tokens (mais confiável)
+      // NOTA: A busca na coleção 'push_tokens' foi removida conforme sua implementação original em lib/firebase.ts.
+      // Se você tem uma coleção 'push_tokens' separada e funcional, pode reativar essa lógica.
+      // Por ora, vamos confiar apenas nos tokens da coleção 'users'.
+      /*
+      logger.info(`[${eventId}] Coletando tokens da coleção 'push_tokens'`);
       const tokensSnapshot = await admin.firestore().collection("push_tokens").get();
-      
+      let pushTokensCollectionCount = 0;
       tokensSnapshot.forEach((doc) => {
         const tokenData = doc.data();
-        if (tokenData.token && !tokens.includes(tokenData.token)) {
+        if (tokenData.token && !userTokensMap.has(tokenData.token)) {
+            // Aqui, precisaríamos saber a qual usuário este token pertence para aplicar a lógica de exclusão do criador.
+            // Se a coleção 'push_tokens' não tiver uma referência ao userId, a exclusão do criador pode não funcionar corretamente para estes tokens.
+            // Considerar adicionar userId à coleção 'push_tokens' ou confiar apenas nos tokens de 'users'.
           tokens.push(tokenData.token);
-          logger.info(`Token obtido da coleção push_tokens: ${tokenData.token.substr(0, 10)}...`);
+          userTokensMap.set(tokenData.token, tokenData.userId || 'unknown_user_from_push_tokens'); // Supondo que haja um campo userId
+          pushTokensCollectionCount++;
+          logger.info(`[${eventId}] Token ${tokenData.token.substring(0,15)}... (de push_tokens/${doc.id}) adicionado.`);
+        } else if (tokenData.token && userTokensMap.has(tokenData.token)) {
+            logger.info(`[${eventId}] Token ${tokenData.token.substring(0,15)}... (de push_tokens/${doc.id}) já existe, ignorando duplicata.`);
         }
       });
+      if(pushTokensCollectionCount > 0) {
+        logger.info(`[${eventId}] ${pushTokensCollectionCount} tokens adicionais coletados da coleção 'push_tokens'. Total atual: ${tokens.length}`);
+      }
+      */
 
       if (tokens.length === 0) {
-        logger.info("Nenhum token de push encontrado para enviar notificação");
+        logger.warn(`[${eventId}] Nenhum token de push válido encontrado após todas as coletas. Notificação não será enviada.`);
         return;
       }
 
-      logger.info(`Enviando notificação para ${tokens.length} dispositivos`);
-
-      // Enviar notificação diretamente através da API do Firebase Cloud Messaging
-      // Obter a chave do servidor FCM da configuração
-      const firebaseAPIKey = functions.config().messaging?.server_key || "";
-      
-      if (!firebaseAPIKey) {
-        logger.error("Chave de servidor FCM não configurada. Configure através de 'firebase functions:config:set messaging.server_key=SUA_CHAVE_AQUI'");
-        return;
-      }
-
-      logger.info("Usando chave de servidor FCM para enviar notificações");
+      logger.info(`[${eventId}] Total de ${tokens.length} tokens únicos selecionados para envio.`);
 
       // Separar tokens FCM e tokens Expo
       const fcmTokens = tokens.filter((token) => !token.startsWith("ExponentPushToken"));
       const expoTokens = tokens.filter((token) => token.startsWith("ExponentPushToken"));
       
-      logger.info(`Tokens categorizados: ${fcmTokens.length} FCM, ${expoTokens.length} Expo`);
+      logger.info(`[${eventId}] Tokens categorizados: ${fcmTokens.length} FCM, ${expoTokens.length} Expo`);
 
-      // Processar tokens FCM
+      // Processar tokens FCM usando firebase-admin
       if (fcmTokens.length > 0) {
-        // Preparar o payload para o FCM
-        const fcmMessages = fcmTokens.map((token) => ({
-          to: token,
+        // Preparar a mensagem multicast
+        const multicastMessage = {
+          tokens: fcmTokens,
           notification: {
             title: notificationData.title,
             body: notificationData.message,
-            sound: "default",
-            android_channel_id: "default",
           },
           data: {
-            type: notificationData.type,
-            relatedItemId: notificationData.relatedItemId,
+            eventId: eventId, // Adicionando eventId para rastreamento
+            notificationId: snapshot.id,
+            type: notificationData.type || "",
+            relatedItemId: notificationData.relatedItemId || "",
           },
           android: {
             priority: "high" as const,
             notification: {
-              channel_id: "default",
+              channelId: "default",
               priority: "high" as const,
-              default_sound: true,
-              default_vibrate_timings: true,
+              defaultSound: true,
+              defaultVibrateTimings: true,
               icon: "notification_icon",
               color: "#1E3A8A",
             },
@@ -108,46 +135,26 @@ export const sendPushNotification = onDocumentCreated(
               aps: {
                 sound: "default",
                 badge: 1,
-                content_available: true,
+                contentAvailable: true,
               },
             },
           },
-        }));
+        };
 
-        // Enviar as mensagens em lotes para o FCM
-        const chunkSize = 500; // FCM permite até 500 mensagens por requisição
-        const chunks = [];
-
-        for (let i = 0; i < fcmMessages.length; i += chunkSize) {
-          chunks.push(fcmMessages.slice(i, i + chunkSize));
-        }
-
-        // Enviar cada lote para a API do FCM
-        const sendPromises = chunks.map(async (chunk) => {
-          try {
-            logger.info(`Enviando lote de ${chunk.length} notificações via FCM`);
-            const response = await axios.post(
-              "https://fcm.googleapis.com/fcm/send",
-              chunk.length === 1 ? chunk[0] : { registration_ids: chunk.map((msg) => msg.to) },
-              {
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `key=${firebaseAPIKey}`,
-                },
+        try {
+          logger.info(`[${eventId}] Enviando ${fcmTokens.length} notificações FCM via firebase-admin. Tokens: ${fcmTokens.join(", ")}`);
+          const response = await admin.messaging().sendEachForMulticast(multicastMessage);
+          logger.info(`[${eventId}] Notificações FCM enviadas: ${response.successCount} sucesso, ${response.failureCount} falhas.`);
+          if (response.failureCount > 0) {
+            response.responses.forEach((resp, idx) => {
+              if (!resp.success) {
+                logger.warn(`[${eventId}] Falha ao enviar FCM para token: ${fcmTokens[idx]}, Erro: ${resp.error?.code}, Mensagem: ${resp.error?.message}`);
               }
-            );
-
-            logger.info("Resposta do FCM:", response.data);
-            return response.data;
-          } catch (error) {
-            logger.error("Erro ao enviar notificação via FCM:", error);
-            throw error;
+            });
           }
-        });
-
-        // Aguardar todas as requisições FCM
-        await Promise.all(sendPromises);
-        logger.info("Notificações FCM enviadas com sucesso");
+        } catch (error: any) {
+          logger.error(`[${eventId}] ERRO ao enviar notificações FCM via firebase-admin:`, error.code, error.message, error.stack);
+        }
       }
       
       // Processar tokens Expo
@@ -159,11 +166,13 @@ export const sendPushNotification = onDocumentCreated(
           title: notificationData.title,
           body: notificationData.message,
           data: { 
+            eventId: eventId, // Adicionando eventId para rastreamento
+            notificationId: snapshot.id,
             type: notificationData.type,
             relatedItemId: notificationData.relatedItemId,
           },
-          priority: "high",
-          channelId: "default",
+          priority: "high" as const, // Adicionado "as const" para tipagem mais precisa
+          channelId: "default", // Canal padrão para Android
         }));
         
         // Dividir em lotes de 100 (limite do Expo)
@@ -175,9 +184,9 @@ export const sendPushNotification = onDocumentCreated(
         }
         
         // Enviar cada lote para o serviço Expo
-        const expoPromises = expoChunks.map(async (chunk) => {
+        const expoPromises = expoChunks.map(async (chunk, chunkIndex) => {
           try {
-            logger.info(`Enviando lote de ${chunk.length} notificações via Expo Push Service`);
+            logger.info(`[${eventId}] Enviando lote ${chunkIndex + 1}/${expoChunks.length} de ${chunk.length} notificações via Expo Push Service. Tokens: ${chunk.map((c) => c.to.substring(0, 15) + "...").join(", ")}`);
             const response = await axios.post(
               "https://exp.host/--/api/v2/push/send",
               chunk,
@@ -185,26 +194,55 @@ export const sendPushNotification = onDocumentCreated(
                 headers: {
                   "Accept": "application/json",
                   "Content-Type": "application/json", 
+                  "Accept-Encoding": "gzip, deflate", // Adicionado por recomendação da Expo
                 },
               }
             );
             
-            logger.info("Resposta do Expo:", response.data);
+            logger.info(`[${eventId}] Resposta do Expo para lote ${chunkIndex + 1}:`, JSON.stringify(response.data, null, 2));
+            // Verificar se há erros individuais nos tickets do Expo
+            if (response.data && Array.isArray(response.data.data)) {
+              response.data.data.forEach((ticket: any) => {
+                if (ticket.status === "error") {
+                  logger.warn(`[${eventId}] Erro no ticket Expo para token ${ticket.to ? ticket.to.substring(0, 15) + "..." : "TOKEN_DESCONHECIDO"}: ${ticket.message}`, ticket.details);
+                }
+              });
+            }
             return response.data;
-          } catch (error) {
-            logger.error("Erro ao enviar notificação via Expo:", error);
-            throw error;
+          } catch (error: any) {
+            const errorMessage = `[${eventId}] ERRO ao enviar lote ${chunkIndex + 1} de notificações Expo:`;
+            if (error.response) {
+              // O servidor respondeu com um status fora da faixa 2xx
+              logger.error(errorMessage, `Data: ${JSON.stringify(error.response.data, null, 2)}, Status: ${error.response.status}, Headers: ${JSON.stringify(error.response.headers, null, 2)}`);
+            } else if (error.request) {
+              // A requisição foi feita mas nenhuma resposta foi recebida
+              logger.error(errorMessage, `Nenhuma resposta recebida: ${error.request}`);
+            } else {
+              // Algo aconteceu ao configurar a requisição que acionou um erro
+              logger.error(errorMessage, `Erro na configuração: ${error.message}`);
+            }
+            // logger.error(`Stack: ${error.stack}`); // Pode ser muito verboso
+            // Não relançar o erro aqui para permitir que outros lotes sejam processados, mas o erro já foi logado.
+            return null; // Retornar null para que Promise.all não rejeite imediatamente
           }
         });
         
         // Aguardar todas as requisições Expo
-        await Promise.all(expoPromises);
-        logger.info("Notificações Expo enviadas com sucesso");
+        try {
+          const results = await Promise.all(expoPromises);
+          logger.info(`[${eventId}] Todos os lotes Expo processados. Resultados:`, results.filter((r) => r !== null).length > 0 ? JSON.stringify(results.filter((r) => r !== null), null, 2) : "Nenhuma resposta bem-sucedida ou todos os lotes falharam.");
+          logger.info(`[${eventId}] Notificações Expo potencialmente enviadas.`);
+        } catch (batchError) {
+            // Este catch é mais para o caso de Promise.all() em si falhar, 
+            // embora os erros de lote individuais sejam tratados e logados acima.
+            logger.error(`[${eventId}] ERRO CRÍTICO no processamento de lotes Expo:`, batchError);
+        }
       }
       
-      logger.info(`Notificações enviadas: ${fcmTokens.length} via FCM, ${expoTokens.length} via Expo`);
-    } catch (error) {
-      logger.error("Erro ao processar e enviar notificação:", error);
+      logger.info(`[${eventId}] Processamento da notificação ID: ${snapshot.id} concluído. ${fcmTokens.length} FCM e ${expoTokens.length} Expo processados.`);
+    } catch (error: any) {
+      const eventId = event?.id || "ID_EVENTO_DESCONHECIDO";
+      logger.error(`[${eventId}] ERRO GERAL ao processar notificação na Cloud Function:`, error.message, error.stack);
     }
   }
 );
@@ -222,105 +260,56 @@ export const testPushNotification = functions.https.onRequest(
         return;
       }
 
-      // Obter a chave do servidor FCM da configuração
-      const firebaseAPIKey = functions.config().messaging?.server_key || "";
-      
-      if (!firebaseAPIKey) {
-        logger.error("Chave de servidor FCM não configurada");
-        response.status(500).send({
-          success: false,
-          error: "Chave de servidor FCM não configurada. Configure através de 'firebase functions:config:set messaging.server_key=SUA_CHAVE_AQUI'",
-        });
-        return;
-      }
-      
       // Separar tokens FCM e tokens Expo
       const fcmTokens = tokens.filter((token) => !token.startsWith("ExponentPushToken"));
       const expoTokens = tokens.filter((token) => token.startsWith("ExponentPushToken"));
       
       logger.info(`Tokens categorizados: ${fcmTokens.length} FCM, ${expoTokens.length} Expo`);
       
-      // Enviando notificações FCM
+      // Enviando notificações FCM usando firebase-admin
       let fcmResult = null;
       if (fcmTokens.length > 0) {
-        // Preparar o payload para o FCM
-        const fcmPayload = fcmTokens.length === 1 ?
-          {
-            to: fcmTokens[0],
+        const multicastMessage = {
+          tokens: fcmTokens,
+          notification: {
+            title,
+            body: message,
+          },
+          data: { title, message },
+          android: {
+            priority: "high" as const,
             notification: {
-              title,
-              body: message,
-              sound: "default",
-              android_channel_id: "default",
-            },
-            data: { title, message },
-            android: {
+              channelId: "default",
               priority: "high" as const,
-              notification: {
-                channel_id: "default",
-                priority: "high" as const,
-                default_sound: true,
-                default_vibrate_timings: true,
-                icon: "notification_icon",
-                color: "#1E3A8A",
+              defaultSound: true,
+              defaultVibrateTimings: true,
+              icon: "notification_icon",
+              color: "#1E3A8A",
+            },
+          },
+          apns: {
+            payload: {
+              aps: {
+                sound: "default",
+                badge: 1,
+                contentAvailable: true,
               },
             },
-            apns: {
-              payload: {
-                aps: {
-                  sound: "default",
-                  badge: 1,
-                  content_available: true,
-                },
-              },
-            },
-          } :
-          {
-            registration_ids: fcmTokens,
-            notification: {
-              title,
-              body: message,
-              sound: "default",
-              android_channel_id: "default",
-            },
-            data: { title, message },
-            android: {
-              priority: "high" as const,
-              notification: {
-                channel_id: "default",
-                priority: "high" as const,
-                default_sound: true,
-                default_vibrate_timings: true,
-                icon: "notification_icon",
-                color: "#1E3A8A",
-              },
-            },
-            apns: {
-              payload: {
-                aps: {
-                  sound: "default",
-                  badge: 1,
-                  content_available: true,
-                },
-              },
-            },
-          };
-
-        // Enviar ao serviço do FCM
+          },
+        };
         try {
-          fcmResult = await axios.post(
-            "https://fcm.googleapis.com/fcm/send",
-            fcmPayload,
-            {
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `key=${firebaseAPIKey}`,
-              },
-            }
-          );
-          logger.info("Notificação de teste FCM enviada:", fcmResult.data);
-        } catch (fcmError) {
-          logger.error("Erro ao enviar notificação FCM:", fcmError);
+          logger.info(`Enviando notificações FCM via firebase-admin para ${fcmTokens.length} tokens`);
+          fcmResult = await admin.messaging().sendEachForMulticast(multicastMessage);
+          logger.info(`Notificações FCM enviadas: ${fcmResult.successCount} sucesso, ${fcmResult.failureCount} falhas`);
+          if (fcmResult.failureCount > 0) {
+            fcmResult.responses.forEach((resp, idx) => {
+              if (!resp.success) {
+                logger.warn(`Falha ao enviar para token: ${fcmTokens[idx]}, erro: ${resp.error?.message}`);
+              }
+            });
+          }
+        } catch (error) {
+          logger.error("Erro ao enviar notificações FCM via firebase-admin:", error);
         }
       }
       
@@ -359,7 +348,7 @@ export const testPushNotification = functions.https.onRequest(
       response.status(200).send({
         success: true,
         message: `Notificações enviadas: ${fcmTokens.length} via FCM, ${expoTokens.length} via Expo`,
-        fcmResult: fcmResult?.data || null,
+        fcmResult: fcmResult || null,
         expoResult: expoResult?.data || null,
       });
     } catch (error) {

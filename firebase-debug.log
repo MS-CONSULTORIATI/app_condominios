@@ -1,0 +1,30 @@
+[debug] [2025-05-29T19:39:32.749Z] ----------------------------------------------------------------------
+[debug] [2025-05-29T19:39:32.752Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\maike\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js deploy --only functions
+[debug] [2025-05-29T19:39:32.753Z] CLI Version:   14.2.2
+[debug] [2025-05-29T19:39:32.753Z] Platform:      win32
+[debug] [2025-05-29T19:39:32.753Z] Node Version:  v22.14.0
+[debug] [2025-05-29T19:39:32.754Z] Time:          Thu May 29 2025 16:39:32 GMT-0300 (Horário Padrão de Brasília)
+[debug] [2025-05-29T19:39:32.754Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-05-29T19:39:33.204Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-05-29T19:39:33.206Z] > authorizing via signed-in user (maike.silva@msconsultoriati.com)
+[debug] [2025-05-29T19:39:33.206Z] [iam] checking project app-condominio-facil for permissions ["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]
+[debug] [2025-05-29T19:39:33.208Z] Checked if tokens are valid: true, expires at: 1748550995343
+[debug] [2025-05-29T19:39:33.208Z] Checked if tokens are valid: true, expires at: 1748550995343
+[debug] [2025-05-29T19:39:33.210Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/app-condominio-facil:testIamPermissions [none]
+[debug] [2025-05-29T19:39:33.210Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/app-condominio-facil:testIamPermissions x-goog-quota-user=projects/app-condominio-facil
+[debug] [2025-05-29T19:39:33.210Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/app-condominio-facil:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]}
+[debug] [2025-05-29T19:39:34.262Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/app-condominio-facil:testIamPermissions 200
+[debug] [2025-05-29T19:39:34.262Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/app-condominio-facil:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]}
+[debug] [2025-05-29T19:39:34.263Z] Checked if tokens are valid: true, expires at: 1748550995343
+[debug] [2025-05-29T19:39:34.263Z] Checked if tokens are valid: true, expires at: 1748550995343
+[debug] [2025-05-29T19:39:34.263Z] >>> [apiv2][query] POST https://iam.googleapis.com/v1/projects/app-condominio-facil/serviceAccounts/app-condominio-facil@appspot.gserviceaccount.com:testIamPermissions [none]
+[debug] [2025-05-29T19:39:34.263Z] >>> [apiv2][body] POST https://iam.googleapis.com/v1/projects/app-condominio-facil/serviceAccounts/app-condominio-facil@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[debug] [2025-05-29T19:39:35.205Z] <<< [apiv2][status] POST https://iam.googleapis.com/v1/projects/app-condominio-facil/serviceAccounts/app-condominio-facil@appspot.gserviceaccount.com:testIamPermissions 404
+[debug] [2025-05-29T19:39:35.205Z] <<< [apiv2][body] POST https://iam.googleapis.com/v1/projects/app-condominio-facil/serviceAccounts/app-condominio-facil@appspot.gserviceaccount.com:testIamPermissions {"error":{"code":404,"message":"Unknown service account","status":"NOT_FOUND"}}
+[debug] [2025-05-29T19:39:35.206Z] [functions] service account IAM check errored, deploy may fail: Request to https://iam.googleapis.com/v1/projects/app-condominio-facil/serviceAccounts/app-condominio-facil@appspot.gserviceaccount.com:testIamPermissions had HTTP Error: 404, Unknown service account {"name":"FirebaseError","children":[],"context":{"body":{"error":{"code":404,"message":"Unknown service account","status":"NOT_FOUND"}},"response":{"statusCode":404}},"exit":1,"message":"Request to https://iam.googleapis.com/v1/projects/app-condominio-facil/serviceAccounts/app-condominio-facil@appspot.gserviceaccount.com:testIamPermissions had HTTP Error: 404, Unknown service account","status":404}
+[info] 
+[info] === Deploying to 'app-condominio-facil'...
+[info] 
+[info] i  deploying functions 
+[info] Running command: npm --prefix "$RESOURCE_DIR" run lint

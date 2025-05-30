@@ -19,6 +19,7 @@ import { Mail, Lock, User, ArrowLeft, Phone, CreditCard, Home, MapPin, Camera } 
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { Picker } from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
+import { initializeNotifications } from '@/lib/notifications';
 
 export default function RegisterScreen() {
   const [firstName, setFirstName] = useState('');
@@ -54,6 +55,7 @@ export default function RegisterScreen() {
     
     try {
       await register(email, password, fullName, phone, cpf, street, house, photoURI);
+      await initializeNotifications();
       router.replace('/(app)');
     } catch (err) {
       setError('Falha no registro. Tente novamente.');

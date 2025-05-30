@@ -27,6 +27,7 @@ import Animated, {
   Easing
 } from 'react-native-reanimated';
 import CondominiumInfoDrawer from '@/components/CondominiumInfoDrawer';
+import { initializeNotifications } from '@/lib/notifications';
 
 export default function LoginScreen() {
   const { 
@@ -161,6 +162,7 @@ export default function LoginScreen() {
     
     try {
       await login(email, password);
+      await initializeNotifications();
       // Usar setTimeout para garantir a navegação correta
       setTimeout(() => {
         router.replace('/(app)');
@@ -185,6 +187,7 @@ export default function LoginScreen() {
       
       if (result.success) {
         await loginWithBiometric();
+        await initializeNotifications();
         // Usar setTimeout para garantir a navegação correta
         setTimeout(() => {
           router.replace('/(app)');

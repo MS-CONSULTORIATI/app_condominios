@@ -524,7 +524,7 @@ export default function HomeScreen() {
               Olá, {user?.name?.split(' ')[0] || 'Morador'}!
             </Text>
             <Text style={styles.welcomeSubtitle}>
-              Bem-vindo ao Condomínio Fácil
+              Bem-vindo ao Condomínio Fácil 2
             </Text>
           </View>
           

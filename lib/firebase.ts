@@ -1394,7 +1394,7 @@ export const deleteUser = async (userId: string) => {
 // Firebase Notifications
 export const createNotification = async (notificationData: Omit<FirebaseNotification, 'id' | 'createdAt' | 'read'>, creatorUserId?: string) => {
   try {
-    console.log(`[Notificação] Criando notificação: "${notificationData.title}" - criador: ${creatorUserId || 'não especificado'}`);
+    console.log(`[Notificação] Criando notificação: "${notificationData.title}" - Tipo: ${notificationData.type} - Item: ${notificationData.relatedItemId || 'N/A'} - Criador: ${creatorUserId || 'não especificado'}`);
     
     // Add to Firestore notifications collection
     const notificationRef = await addDoc(collection(db, 'notifications'), {
@@ -1408,11 +1408,11 @@ export const createNotification = async (notificationData: Omit<FirebaseNotifica
 
     // Verificar se a notificação é direcionada a um usuário específico
     if (notificationData.targetUserId) {
-      console.log(`[Notificação] Enviando notificação específica para usuário: ${notificationData.targetUserId}`);
+      console.log(`[Notificação] Enviando notificação PUSH específica para usuário: ${notificationData.targetUserId}`);
       
       // Não enviar se o alvo for o próprio criador
       if (notificationData.targetUserId === creatorUserId) {
-        console.log(`[Notificação] Ignorando notificação para o criador (mesmo usuário)`);
+        console.log(`[Notificação] PUSH ignorado: alvo é o próprio criador (ID: ${creatorUserId})`);
         return notificationRef;
       }
       
@@ -1422,8 +1422,9 @@ export const createNotification = async (notificationData: Omit<FirebaseNotifica
         notificationData.title, 
         notificationData.message
       );
+      console.log(`[Notificação] PUSH específico para ${notificationData.targetUserId} processado.`);
     } else {
-      console.log(`[Notificação] Enviando notificação para todos os usuários, exceto criador: ${creatorUserId || 'não especificado'}`);
+      console.log(`[Notificação] Enviando notificação PUSH para todos os usuários (exceto criador: ${creatorUserId || 'não especificado'})`);
       
       // Enviar notificação push para todos os usuários, exceto o criador
       await sendPushNotificationToAllUsers(
@@ -1431,13 +1432,15 @@ export const createNotification = async (notificationData: Omit<FirebaseNotifica
         notificationData.message, 
         creatorUserId
       );
+      console.log(`[Notificação] PUSH para todos os usuários processado.`);
     }
     
     return notificationRef;
   } catch (error) {
-    console.error('[Notificação] Erro ao criar notificação:', error);
-    // Em caso de erro, ainda retornamos uma referência para que o código cliente não falhe
-    return null;
+    console.error(`[Notificação] ERRO CRÍTICO ao criar/enviar notificação "${notificationData.title}":`, error);
+    // Em vez de retornar null, relançar o erro para que a função chamadora possa tratá-lo.
+    // Isso garante que a falha no envio do push não passe despercebida.
+    throw error;
   }
 };
 
@@ -3143,10 +3146,16 @@ export const getSocialPosts = async (): Promise<SocialPost[]> => {
 export const createSocialPost = async (postData: Omit<SocialPost, 'id' | 'createdAt' | 'likes' | 'likeCount' | 'comments' | 'commentCount'>) => {
   try {
     const postsRef = collection(db, 'socialPosts');
-    
+
+    // Garantir que userAvatar não seja undefined
+    const safePostData = {
+      ...postData,
+      userAvatar: postData.userAvatar !== undefined ? postData.userAvatar : null,
+    };
+
     // Primeiro, criar o post para obter o ID
     const tempPost = {
-      ...postData,
+      ...safePostData,
       createdAt: Date.now(),
       likes: [],
       likeCount: 0,
@@ -3154,7 +3163,7 @@ export const createSocialPost = async (postData: Omit<SocialPost, 'id' | 'create
       commentCount: 0,
       images: [], // Inicialmente vazio,
     };
-    
+
     const docRef = await addDoc(postsRef, tempPost);
     const postId = docRef.id;
     

@@ -7,7 +7,7 @@ export default function SocialLayout() {
         name="index" 
         options={{ 
           title: 'Rede Social',
-          headerShown: false
+          headerShown: false,
         }} 
       />
       <Stack.Screen 

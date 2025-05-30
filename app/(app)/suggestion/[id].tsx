@@ -607,7 +607,7 @@ export default function SuggestionDetailScreen() {
       <Modal
         animationType="fade"
         transparent={true}
-        visible={modalVisible}
+        visible={modalVisible && !!selectedImage}
         onRequestClose={() => setModalVisible(false)}
       >
         <View style={styles.modalContainer}>
@@ -617,13 +617,13 @@ export default function SuggestionDetailScreen() {
           >
             <X size={24} color="white" />
           </TouchableOpacity>
-          {selectedImage && (
+          {selectedImage ? (
             <Image
               source={{ uri: selectedImage }}
               style={styles.modalImage}
               resizeMode="contain"
             />
-          )}
+          ) : null}
         </View>
       </Modal>
     </KeyboardAvoidingView>

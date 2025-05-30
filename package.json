@@ -65,6 +65,8 @@
     "expo-updates": "~0.27.4",
     "expo-web-browser": "~14.0.1",
     "firebase": "^11.6.1",
+    "firebase-admin": "^13.4.0",
+    "google-auth-library": "^9.15.1",
     "hono": "^4.7.8",
     "lucide-react-native": "^0.475.0",
     "nativewind": "^4.1.23",

@@ -1,4 +1,6 @@
 import { Stack } from 'expo-router';
+import Colors from '@/constants/colors';
+import { Alert } from 'react-native';
 
 export default function PackagesLayout() {
   return (
@@ -8,12 +10,10 @@ export default function PackagesLayout() {
         options={{ 
           title: 'Encomendas',
           headerStyle: {
-            backgroundColor: '#4A90E2',
+            backgroundColor: Colors.primary,
           },
-          headerTintColor: '#fff',
-          headerTitleStyle: {
-            fontWeight: 'bold',
-          },
+          headerTintColor: 'white',
+          headerTitleAlign: 'center',
         }} 
       />
       <Stack.Screen 
@@ -21,12 +21,10 @@ export default function PackagesLayout() {
         options={{ 
           title: 'Nova Encomenda',
           headerStyle: {
-            backgroundColor: '#4A90E2',
+            backgroundColor: Colors.primary,
           },
-          headerTintColor: '#fff',
-          headerTitleStyle: {
-            fontWeight: 'bold',
-          },
+          headerTintColor: 'white',
+          headerTitleAlign: 'center',
         }} 
       />
       <Stack.Screen 
@@ -34,12 +32,10 @@ export default function PackagesLayout() {
         options={{ 
           title: 'Detalhes da Encomenda',
           headerStyle: {
-            backgroundColor: '#4A90E2',
+            backgroundColor: Colors.primary,
           },
-          headerTintColor: '#fff',
-          headerTitleStyle: {
-            fontWeight: 'bold',
-          },
+          headerTintColor: 'white',
+          headerTitleAlign: 'center',
         }} 
       />
       <Stack.Screen 
@@ -47,12 +43,10 @@ export default function PackagesLayout() {
         options={{ 
           title: 'Minhas Encomendas',
           headerStyle: {
-            backgroundColor: '#4A90E2',
+            backgroundColor: Colors.primary,
           },
-          headerTintColor: '#fff',
-          headerTitleStyle: {
-            fontWeight: 'bold',
-          },
+          headerTintColor: 'white',
+          headerTitleAlign: 'center',
         }} 
       />
       <Stack.Screen 
@@ -60,12 +54,10 @@ export default function PackagesLayout() {
         options={{ 
           title: 'Assinatura',
           headerStyle: {
-            backgroundColor: '#4A90E2',
+            backgroundColor: Colors.primary,
           },
-          headerTintColor: '#fff',
-          headerTitleStyle: {
-            fontWeight: 'bold',
-          },
+          headerTintColor: 'white',
+          headerTitleAlign: 'center',
         }} 
       />
     </Stack>

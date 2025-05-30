@@ -32,7 +32,6 @@ import {
   Eye,
   EyeOff
 } from 'lucide-react-native';
-import { formatFileSize } from '@/utils/format';
 
 export default function CreateNewsScreen() {
   const { user } = useAuthStore();
@@ -264,7 +263,11 @@ export default function CreateNewsScreen() {
       <Stack.Screen 
         options={{ 
           headerTitle: 'Nova Notícia',
-          headerShown: false
+          headerStyle: {
+            backgroundColor: Colors.primary,
+          },
+          headerTintColor: 'white',
+          headerTitleAlign: 'center',
         }} 
       />
       <SafeAreaView style={styles.container}>
