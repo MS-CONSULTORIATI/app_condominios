@@ -47,22 +47,18 @@ jobs:
 
       - name: Increment Version Code
         run: |
-          # Get current version code from build.gradle
-          CURRENT_VERSION=$(grep -oP 'versionCode \K\d+' android/app/build.gradle)
-          echo "Current version code: $CURRENT_VERSION"
-          
-          # Increment version code
-          NEW_VERSION=$((CURRENT_VERSION + 1))
+          # Use GitHub Actions run number as versionCode
+          NEW_VERSION=${{ github.run_number }}
           echo "New version code: $NEW_VERSION"
-          
-          # Update version code in build.gradle
-          sed -i "s/versionCode $CURRENT_VERSION/versionCode $NEW_VERSION/" android/app/build.gradle
-          
-          # Also update versionName to match (optional)
+
+          # Update versionCode in build.gradle
+          sed -i "s/versionCode [0-9]\+/versionCode $NEW_VERSION/" android/app/build.gradle
+
+          # Atualiza versionName (opcional)
           CURRENT_VERSION_NAME=$(grep -oP 'versionName "\K[^"]+' android/app/build.gradle)
           echo "Current version name: $CURRENT_VERSION_NAME"
-          
-          # Extract major.minor from current version name and increment patch
+
+          # Extrai major.minor e incrementa patch
           if [[ $CURRENT_VERSION_NAME =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
             MAJOR=${BASH_REMATCH[1]}
             MINOR=${BASH_REMATCH[2]}
@@ -70,23 +66,22 @@ jobs:
             NEW_PATCH=$((PATCH + 1))
             NEW_VERSION_NAME="$MAJOR.$MINOR.$NEW_PATCH"
           else
-            # If version name doesn't match pattern, just use 1.0.x format
             NEW_VERSION_NAME="1.0.$NEW_VERSION"
           fi
-          
+
           echo "New version name: $NEW_VERSION_NAME"
           sed -i "s/versionName \"$CURRENT_VERSION_NAME\"/versionName \"$NEW_VERSION_NAME\"/" android/app/build.gradle
-          
-          # Update app.json version to keep consistency
+
+          # Atualiza app.json para manter consistência
           if [ -f "app.json" ]; then
             sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$NEW_VERSION_NAME\"/" app.json
             echo "Updated app.json version to: $NEW_VERSION_NAME"
           fi
-          
-          # Verify changes
+
+          # Verifica mudanças
           echo "Updated build.gradle version info:"
           grep -E "(versionCode|versionName)" android/app/build.gradle
-          
+
           if [ -f "app.json" ]; then
             echo "Updated app.json version:"
             grep -A 1 -B 1 "\"version\":" app.json
