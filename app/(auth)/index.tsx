@@ -39,12 +39,12 @@ export default function LoginScreen() {
     syncWithFirebase,
     isAuthenticated,
     user,
-    silentLogin
+    silentLogin,
+    isAuthChecking,
   } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [localError, setLocalError] = useState('');
   const [localLoading, setLocalLoading] = useState(false);
   const [isBiometricAvailable, setIsBiometricAvailable] = useState(false);
@@ -68,9 +68,6 @@ export default function LoginScreen() {
         if (silentLoginSuccess) {
           console.log('LoginScreen: Login silencioso bem-sucedido');
           // Login silencioso funcionou, não precisa continuar verificando
-          if (isMounted) {
-            setIsAuthChecking(false);
-          }
           return;
         }
         
@@ -80,10 +77,6 @@ export default function LoginScreen() {
         console.log('LoginScreen: Estado após verificação:', isAuth ? 'Autenticado' : 'Não autenticado');
       } catch (err) {
         console.error('LoginScreen: Erro verificando autenticação inicial:', err);
-      } finally {
-        if (isMounted) {
-          setIsAuthChecking(false);
-        }
       }
     };
     
@@ -96,14 +89,13 @@ export default function LoginScreen() {
 
   // Verificar se já está autenticado
   useEffect(() => {
-    if (isAuthenticated && user) {
+    if (!isAuthChecking && isAuthenticated && user) {
       console.log('LoginScreen: Já autenticado como', user.name, 'redirecionando para home');
-      // Usar setTimeout para garantir que a navegação ocorra após a montagem completa
       setTimeout(() => {
         router.replace('/(app)');
       }, 100);
     }
-  }, [isAuthenticated, user, router]);
+  }, [isAuthenticated, user, isAuthChecking, router]);
 
   // Verificar disponibilidade de biometria
   useEffect(() => {

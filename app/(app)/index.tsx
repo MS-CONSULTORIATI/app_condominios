@@ -126,9 +126,9 @@ export default function HomeScreen() {
   }, [refreshData]);
 
   // Initial data loading
-  useEffect(() => {
-    refreshData();
-  }, []);
+  // useEffect(() => {
+  //   refreshData();
+  // }, []);
 
   // Refresh data when screen comes into focus
   useFocusEffect(

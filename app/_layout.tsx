@@ -279,27 +279,6 @@ function RootLayoutNav() {
     >
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       <Stack.Screen name="(app)" options={{ headerShown: false }} />
-      <Stack.Screen 
-        name="lost-and-found" 
-        options={{ 
-          headerShown: false,
-          presentation: 'card',
-        }} 
-      />
-      <Stack.Screen 
-        name="lost-and-found/[id]" 
-        options={{ 
-          headerShown: false,
-          presentation: 'card',
-        }} 
-      />
-      <Stack.Screen 
-        name="lost-and-found/create" 
-        options={{ 
-          headerShown: false,
-          presentation: 'card',
-        }} 
-      />
     </Stack>
   );
 }

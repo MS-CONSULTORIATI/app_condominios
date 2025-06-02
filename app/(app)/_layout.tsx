@@ -136,9 +136,8 @@ function HeaderRight() {
 }
 
 export default function AppLayout() {
-  const { isAuthenticated, user, syncWithFirebase, silentLogin } = useAuthStore();
+  const { isAuthenticated, user, syncWithFirebase, silentLogin, isAuthChecking, setAuthChecking } = useAuthStore();
   const { subscribeToNotifications, unsubscribeFromNotifications, fetchNotifications } = useNotificationsStore();
-  const [isAuthChecking, setIsAuthChecking] = useState(true);
   const router = useRouter();
 
   // Verificar integridade do perfil e repará-lo se necessário
@@ -151,29 +150,22 @@ export default function AppLayout() {
   // Verificar o estado de autenticação com o Firebase apenas uma vez ao montar
   useEffect(() => {
     let isMounted = true;
-    
     const checkAuthState = async () => {
       if (!isMounted) return;
-      
       try {
+        setAuthChecking(true);
         console.log('AppLayout: Verificando autenticação com Firebase...');
-        
-        // Primeiro tentar login silencioso
         const silentLoginSuccess = await silentLogin();
         if (silentLoginSuccess) {
           console.log('AppLayout: Login silencioso bem-sucedido');
           if (isMounted) {
             await checkAndRepairProfile();
-            setIsAuthChecking(false);
           }
           return;
         }
-        
         console.log('AppLayout: Login silencioso falhou, tentando sincronizar com Firebase');
-        // Se login silencioso falhar, verificar estado atual no Firebase
         const isAuth = await syncWithFirebase();
         console.log('AppLayout: Estado de autenticação após sincronização:', isAuth ? 'Autenticado' : 'Não autenticado');
-        
         if (isAuth && isMounted) {
           await checkAndRepairProfile();
         }
@@ -182,17 +174,15 @@ export default function AppLayout() {
       } finally {
         if (isMounted) {
           console.log('AppLayout: Verificação concluída, atualizando estado...');
-          setIsAuthChecking(false);
+          setAuthChecking(false);
         }
       }
     };
-
     checkAuthState();
-    
     return () => {
       isMounted = false;
     };
-  }, [syncWithFirebase, silentLogin, checkAndRepairProfile]);
+  }, [syncWithFirebase, silentLogin, checkAndRepairProfile, setAuthChecking]);
 
   // Subscribe to notifications only when authenticated
   useEffect(() => {
@@ -207,19 +197,12 @@ export default function AppLayout() {
     }
   }, [isAuthenticated, user, fetchNotifications, subscribeToNotifications, unsubscribeFromNotifications]);
 
-  // Em vez disso, usamos um useEffect para verificar autenticação e redirecionar
+  // Redirecionar para login se não autenticado, mas só após checagem
   useEffect(() => {
-    if (!isAuthChecking && (!isAuthenticated || !user)) {
-      console.log('AppLayout: Usuário não autenticado, redirecionando para login...');
-      // Se não estiver mais verificando e não houver usuário autenticado, redirecionar para login
-      setTimeout(() => {
-        router.replace('/(auth)');
-      }, 100);
-    } else if (!isAuthChecking && isAuthenticated && user) {
-      console.log('AppLayout: Usuário autenticado:', user.name, 'com ID:', user.id);
-      console.log('AppLayout: Objeto completo do usuário:', JSON.stringify(user, null, 2));
+    if (!isAuthChecking && !isAuthenticated) {
+      router.replace('/(auth)');
     }
-  }, [isAuthenticated, user, isAuthChecking, router]);
+  }, [isAuthChecking, isAuthenticated, router]);
 
   // Se estiver verificando autenticação, mostrar loading
   if (isAuthChecking) {

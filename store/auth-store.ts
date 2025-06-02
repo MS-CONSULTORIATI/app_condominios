@@ -15,6 +15,8 @@ interface AuthState {
   error: string | null;
   biometricEnabled: boolean;
   lastLoggedInEmail: string | null;
+  isAuthChecking: boolean;
+  setAuthChecking: (checking: boolean) => void;
   login: (email: string, password: string) => Promise<void>;
   loginWithBiometric: () => Promise<void>;
   loginAnonymously: () => Promise<void>;
@@ -70,6 +72,8 @@ export const useAuthStore = create<AuthState>()(
       error: null,
       biometricEnabled: false,
       lastLoggedInEmail: null,
+      isAuthChecking: true,
+      setAuthChecking: (checking: boolean) => set({ isAuthChecking: checking }),
       
       login: async (email: string, password: string) => {
         set({ isLoading: true, error: null });
