@@ -25,7 +25,7 @@ import EmptyState from '@/components/EmptyState';
 import { boletosApiService } from '@/services/boletos-api';
 import { stripeBoletosService } from '@/services/stripe-boletos';
 
-// Definindo a interface para o boleto
+// Interface para o boleto formatado para exibição
 interface Boleto {
   id: string;
   description: string;
@@ -33,8 +33,9 @@ interface Boleto {
   value: string;
   status: 'paid' | 'pending';
   pdfUrl: string;
-  month: string; // Adicionando mês para facilitar o filtro
-  year: string;  // Adicionando ano para facilitar o filtro
+  month: string;
+  year: string;
+  paymentUrl?: string;
 }
 
 type FilterTab = 'all' | 'pending' | 'paid';
@@ -63,7 +64,7 @@ export default function BoletosScreen() {
   // Determinar qual serviço usar baseado nas variáveis de ambiente
   const getApiService = () => {
     const stripeKey = process.env.EXPO_PUBLIC_STRIPE_SECRET_KEY;
-    const apiProvider = process.env.EXPO_PUBLIC_API_PROVIDER; // 'stripe' ou 'generic'
+    const apiProvider = process.env.EXPO_PUBLIC_API_PROVIDER;
     
     if (apiProvider === 'stripe' || (stripeKey && !apiProvider)) {
       return stripeBoletosService;
@@ -80,6 +81,80 @@ export default function BoletosScreen() {
   useEffect(() => {
     applyFilters();
   }, [boletos, activeTab, periodFilter]);
+
+  // Efeito para lidar com deep links de retorno do Stripe Checkout
+  useEffect(() => {
+    const handleDeepLink = async (event: { url: string }) => {
+      console.log('🔗 Deep link recebido:', event.url);
+      const url = event.url;
+
+      // Exemplo: seuapp://checkout/success?session_id=cs_test_XXXXX
+      if (url.includes('checkout/success') && url.includes('session_id=')) {
+        const sessionId = url.split('session_id=')[1]?.split('&')[0]; // Extrai o session_id
+        
+        if (sessionId) {
+          console.log('🆔 Checkout Session ID extraído:', sessionId);
+          // setCheckoutSessionIdForProcessing(sessionId); // Guardar para processamento
+          Alert.alert(
+            'Processando Boleto...',
+            'Seu boleto está sendo finalizado. Aguarde um momento.'
+          );
+          setGeneratingBoleto(true); // Mostrar indicador de carregamento
+
+          try {
+            // 1. Chamar um endpoint no SEU BACKEND para buscar a Checkout Session do Stripe
+            //    e obter o payment_intent_id.
+            //    Este endpoint de backend chamaria: GET https://api.stripe.com/v1/checkout/sessions/{SESSION_ID}
+            //    Alternativamente, se o seu backend já armazena essa relação, pode buscar direto.
+            
+            // **** INÍCIO DA SIMULAÇÃO/PLACEHOLDER para obtenção do Payment Intent ID ****
+            // Na sua implementação real, você chamaria seu backend aqui para obter o paymentIntentId.
+            // Exemplo: const paymentIntentId = await getApiService().getPaymentIntentIdFromCheckoutSession(sessionId);
+            const mockPaymentIntentId = `simulated_pi_for_${sessionId}`;
+            console.log('⚠️ Usando Payment Intent ID simulado para buscar detalhes:', mockPaymentIntentId);
+            // **** FIM DA SIMULAÇÃO/PLACEHOLDER ****
+
+            // Uma vez que você tenha o paymentIntentId (real ou simulado):
+            const boletoCompleto = await getApiService().getBoletoById(mockPaymentIntentId, 0);
+            debugBoletoData(boletoCompleto, 'DeepLink Success -> getBoletoById');
+
+            if (boletoCompleto && boletoCompleto.id) {
+              setGeneratedBoleto(boletoCompleto);
+              setShowBoletoModal(true); // Abrir o modal com opções de visualizar/baixar
+            } else {
+              console.error('Boleto não encontrado ou detalhes incompletos após deep link para paymentIntentId:', mockPaymentIntentId);
+              Alert.alert('Erro', 'Não foi possível carregar os detalhes completos do boleto após o pagamento.');
+            }
+            
+            await loadBoletos(); // Recarregar a lista para mostrar o novo boleto ou status atualizado
+
+          } catch (error) {
+            console.error('Erro ao processar retorno do Stripe Checkout:', error);
+            Alert.alert('Erro', 'Não foi possível finalizar o processamento do boleto.');
+          } finally {
+            setGeneratingBoleto(false);
+          }
+        }
+      } else if (url.includes('checkout/cancel')) {
+        console.log('🚫 Checkout cancelado pelo usuário.');
+        Alert.alert('Cancelado', 'A geração do boleto foi cancelada.');
+      }
+    };
+
+    // Adicionar listener para deep links
+    const subscription = Linking.addEventListener('url', handleDeepLink);
+
+    // Verificar se o app foi aberto por um deep link inicial
+    Linking.getInitialURL().then(url => {
+      if (url) {
+        handleDeepLink({ url });
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []); // Executar apenas uma vez na montagem do componente
 
   const applyFilters = () => {
     let filtered = [...boletos];
@@ -212,32 +287,38 @@ export default function BoletosScreen() {
 
   const handleBoletoPress = async (boleto: Boleto) => {
     if (boleto.status === 'paid') {
-      // Para boletos pagos, mostrar o comprovante
       setSelectedBoleto(boleto);
       setShowComprovanteModal(true);
-    } else {
-      // Para boletos pendentes, verificar se já tem dados do boleto
-      if (boleto.pdfUrl || boleto.id.startsWith('pi_')) {
-        // Se já tem dados do boleto (PDF ou é um PaymentIntent), buscar dados completos
-        try {
-          setGeneratingBoleto(true);
-          const boletoCompleto = await getApiService().getBoletoById(boleto.id);
-          
-          debugBoletoData(boletoCompleto, 'getBoletoById response');
-          
-          // Usar os dados completos diretamente, sem misturar formatação
+    } else { // Boleto pendente - sempre tentar visualizar detalhes existentes
+      console.log(`[handleBoletoPress] Boleto ID: ${boleto.id}, Status: ${boleto.status}`);
+      console.log(`  ├─ Details: pdfUrl: ${!!boleto.pdfUrl}, paymentUrl: ${!!boleto.paymentUrl}`);
+      console.log(`  └─ Action: Tentando visualizar detalhes da fatura/boleto existente.`);
+
+      setGeneratingBoleto(true);
+      try {
+        const boletoCompleto = await getApiService().getBoletoById(boleto.id, 0);
+        debugBoletoData(boletoCompleto, 'handleBoletoPress (view existing) -> getBoletoById');
+
+        if (boletoCompleto.paymentUrl && typeof boletoCompleto.paymentUrl === 'string' && boletoCompleto.paymentUrl.trim() !== '') {
+          console.log('        -> Priorizando WebView para paymentUrl:', boletoCompleto.paymentUrl);
+          openBoletoInWebView(boletoCompleto.paymentUrl);
+        } else {
+          console.log('        -> paymentUrl não encontrado/válido. Mostrando modal customizado. paymentUrl:', boletoCompleto.paymentUrl);
           setGeneratedBoleto(boletoCompleto);
           setShowBoletoModal(true);
-          setGeneratingBoleto(false);
-        } catch (error) {
-          console.error('Erro ao buscar dados do boleto:', error);
-          setGeneratingBoleto(false);
-          // Se falhar ao buscar, gerar novo boleto
-          await generateBoleto(boleto);
         }
-      } else {
-        // Se não tem dados, gerar novo boleto
-        await generateBoleto(boleto);
+      } catch (error) {
+        console.error('Erro em handleBoletoPress ao processar boleto pendente:', error);
+        Alert.alert(
+          'Erro ao Processar Boleto',
+          'Não foi possível carregar os detalhes do boleto. Tente novamente.',
+          [{ text: 'OK' }]
+        );
+        // Em caso de erro, ainda mostrar o modal com os dados básicos
+        setGeneratedBoleto(boleto); 
+        setShowBoletoModal(true);
+      } finally {
+        setGeneratingBoleto(false);
       }
     }
   };
@@ -248,91 +329,101 @@ export default function BoletosScreen() {
       return;
     }
 
+    setGeneratingBoleto(true);
     try {
-      setGeneratingBoleto(true);
-      
       // Extrair valor numérico do string formatado (R$ 450,00 → 45000)
-      // Remover "R$", espaços, e converter vírgula para ponto
       let valueString = boletoInfo.value
         .replace('R$', '')
         .trim()
-        .replace(/\./g, '') // Remove pontos (separadores de milhares)
-        .replace(',', '.'); // Converte vírgula para ponto decimal
+        .replace(/\./g, '') 
+        .replace(',', '.'); 
       
       const valueInReais = parseFloat(valueString);
-      const valueInCents = Math.round(valueInReais * 100); // Converter para centavos
-      
-      // Converter data para ISO string
-      const [day, month, year] = boletoInfo.dueDate.split('/').map(Number);
-      const dueDate = new Date(year, month - 1, day).toISOString();
+      const valueInCents = Math.round(valueInReais * 100); 
 
-      // Melhorar a descrição do boleto para ser mais específica
+      // Converter data para ISO string (ainda pode ser útil para descrição)
+      const [day, month, year] = boletoInfo.dueDate.split('/').map(Number);
+      const dueDateObject = new Date(year, month - 1, day);
+
       let description = boletoInfo.description;
-      
-      // Se a descrição estiver vazia, genérica ou for "Payment for Invoice", criar uma mais específica
       if (!description || 
           description === 'Payment for Invoice' || 
           description.includes('Boleto pi_') ||
           description.trim() === '') {
-        
-        // Criar descrição baseada na data de vencimento
-        const monthNames = [
-          'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-          'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-        ];
-        
-        const monthName = monthNames[month - 1];
-        description = `Taxa de condomínio - ${monthName}/${year}`;
+        const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+        const monthName = monthNames[dueDateObject.getMonth()];
+        description = `Taxa de condomínio - ${monthName}/${dueDateObject.getFullYear()}`;
       }
 
-      console.log('🔄 Gerando boleto:', {
-        originalDescription: boletoInfo.description,
-        newDescription: description,
-        originalValue: boletoInfo.value,
-        valueString,
-        valueInReais,
+      console.log('🔄 Iniciando geração de boleto via Stripe Checkout Session:', {
+        description,
         valueInCents,
-        dueDate,
-        customer: user.cpf || user.email || user.id
+        customerEmail: user.email,
+        customerName: user.name,
+        customerDocument: user.cpf, 
       });
 
-      // Validar se o valor é válido
       if (isNaN(valueInCents) || valueInCents <= 0) {
         throw new Error(`Valor inválido: ${boletoInfo.value} → ${valueInCents} centavos`);
       }
+      if (!user.cpf) {
+        Alert.alert('CPF Necessário', 'O CPF do usuário é necessário para gerar boletos.');
+        throw new Error('CPF do usuário não encontrado.');
+      }
 
-      // Gerar boleto via API
-      const newBoleto = await getApiService().createBoleto({
-        description: description, // Usar a descrição melhorada
-        value: valueInCents,
-        dueDate,
-        customerInfo: {
-          name: user.name,
-          email: user.email || `${user.cpf}@condominio.local`,
-          document: user.cpf || user.id
+      // Chamar o backend para criar a Checkout Session
+      const service = getApiService();
+      let checkoutSessionUrl: string | null = null;
+
+      // Usar um type guard manual verificando a existência do método
+      // REMOVIDO: Funcionalidade de checkout não é mais necessária
+      // if (typeof (service as StripeBoletosService).requestBoletoCheckoutSession === 'function') {
+      //   const stripeService = service as StripeBoletosService;
+      //   const sessionResponse = await stripeService.requestBoletoCheckoutSession({
+      //     description: description,
+      //     value: valueInCents,
+      //     customerEmail: user.email || '',
+      //     customerName: user.name || '',
+      //     customerDocument: user.cpf, // CPF/CNPJ é crucial aqui
+      //   });
+      //   checkoutSessionUrl = sessionResponse.checkoutSessionUrl;
+      // } else {
+        // Lidar com o caso em que o serviço não é Stripe ou não suporta este método
+        console.error('Serviço de boletos configurado não suporta Stripe Checkout Sessions, ou o método requestBoletoCheckoutSession não foi encontrado.');
+        throw new Error('A geração de boletos via Stripe Checkout não é suportada pelo provedor de API atual ou o método necessário não está disponível.');
+      // }
+
+      // Redirecionar para a URL do Stripe Checkout
+      if (checkoutSessionUrl) {
+        console.log('🌐 Redirecionando para Stripe Checkout:', checkoutSessionUrl);
+        const supported = await Linking.canOpenURL(checkoutSessionUrl);
+        if (supported) {
+          await Linking.openURL(checkoutSessionUrl);
+          // O fluxo continuará quando o usuário for redirecionado de volta para o app via deep link (success_url)
+          // Você precisará de um listener para esse deep link (ver Passo C)
+        } else {
+          Alert.alert('Erro', `Não foi possível abrir a URL: ${checkoutSessionUrl}`);
         }
-      });
+      } else {
+        throw new Error('URL do Checkout não recebida do backend.');
+      }
 
-      console.log('✅ Boleto gerado com sucesso:', newBoleto);
-      
-      debugBoletoData(newBoleto, 'createBoleto response');
-      
-      setGeneratedBoleto(newBoleto);
-      setShowBoletoModal(true);
-      setGeneratingBoleto(false);
+      // Não vamos mais chamar loadBoletos() ou setShowBoletoModal(true) aqui diretamente.
+      // Isso será tratado após o retorno do deep link.
 
-      // Recarregar a lista de boletos para mostrar o novo
-      await loadBoletos();
-
-    } catch (error) {
-      console.error('Erro ao gerar boleto:', error);
-      setGeneratingBoleto(false);
-      
+    } catch (e) {
+      console.error('Erro ao iniciar geração de boleto via Checkout:', e);
+      let errorMessage = 'Ocorreu um erro desconhecido.';
+      if (e instanceof Error) {
+        errorMessage = e.message;
+      }
       Alert.alert(
-        'Erro ao Gerar Boleto', 
-        'Não foi possível gerar o boleto. Tente novamente ou entre em contato com o suporte.',
+        'Erro ao Gerar Boleto',
+        `Não foi possível iniciar o processo de geração do boleto. Verifique sua conexão e tente novamente. Detalhe: ${errorMessage}`,
         [{ text: 'OK' }]
       );
+    } finally {
+      setGeneratingBoleto(false);
     }
   };
 
@@ -414,7 +505,6 @@ export default function BoletosScreen() {
 
   const renderBoletoCard = ({ item: boleto }: { item: Boleto }) => {
     const isPastDue = () => {
-      // Verificar se o boleto pendente está vencido
       if (boleto.status === 'pending') {
         const [day, month, year] = boleto.dueDate.split('/').map(Number);
         const dueDate = new Date(year, month - 1, day);
@@ -425,32 +515,57 @@ export default function BoletosScreen() {
       return false;
     };
     
+    const isPaid = boleto.status === 'paid';
+    const isOverdueStatus = isPastDue();
+    const idIsString = typeof boleto.id === 'string';
+    const idStartsWithInv = idIsString && boleto.id.startsWith('in_'); // Invoice ID
+    const idStartsWithPi = idIsString && boleto.id.startsWith('pi_'); // Payment Intent ID
+    const hasExistingDetails = !!boleto.pdfUrl || !!boleto.paymentUrl || idStartsWithPi || idStartsWithInv;
+
+    // Determinar o texto do botão principal
+    let buttonText = '';
+    if (isPaid) {
+      buttonText = 'Ver comprovante';
+    } else if (generatingBoleto) {
+      buttonText = 'Carregando...';
+    } else {
+      buttonText = 'Ver boleto'; // Sempre "Ver boleto" para pendentes, pois são faturas já criadas
+    }
+
+    // Logs de depuração
+    if (boleto && boleto.id && typeof boleto.description === 'string') {
+      console.log(`[renderBoletoCard] Boleto ID: ${boleto.id}, Desc: ${boleto.description.substring(0,30)}, Status: ${boleto.status}`);
+      console.log(`  ├─ Details: pdfUrl: ${!!boleto.pdfUrl}, paymentUrl: ${!!boleto.paymentUrl}, idIsString: ${idIsString}, idStartsWithPi: ${idStartsWithPi}, idStartsWithInv: ${idStartsWithInv}`);
+      console.log(`  ├─ State: isPaid: ${isPaid}, generatingBoleto (screen): ${generatingBoleto}, isOverdue: ${isOverdueStatus}`);
+      console.log(`  └─ Decision: hasExistingDetails: ${hasExistingDetails} -> Button text: "${buttonText}"`);
+    }
+    
     return (
       <TouchableOpacity 
         style={[
           styles.card,
-          boleto.status === 'paid' ? styles.paidCard : 
-          isPastDue() ? styles.overdueCard : styles.pendingCard
+          isPaid ? styles.paidCard : 
+          isOverdueStatus ? styles.overdueCard : styles.pendingCard
         ]}
         onPress={() => handleBoletoPress(boleto)}
         activeOpacity={0.7}
       >
         <View style={styles.cardHeader}>
           <View style={styles.cardHeaderLeft}>
-            <FileText size={24} color={boleto.status === 'paid' ? Colors.success : isPastDue() ? Colors.error : Colors.primary} />
+            <FileText size={24} color={isPaid ? Colors.success : isOverdueStatus ? Colors.error : Colors.primary} />
             <Text style={styles.cardTitle}>{boleto.description}</Text>
           </View>
           <View style={[
             styles.statusContainer,
-            boleto.status === 'paid' ? styles.paidStatusContainer : 
-            isPastDue() ? styles.overdueStatusContainer : styles.pendingStatusContainer
+            isPaid ? styles.paidStatusContainer : 
+            isOverdueStatus ? styles.overdueStatusContainer : styles.pendingStatusContainer
           ]}>
             <Text style={[
               styles.statusText, 
-              boleto.status === 'paid' ? styles.paidStatus : 
-              isPastDue() ? styles.overdueStatus : styles.pendingStatus
+              isPaid ? styles.paidStatus : 
+              isOverdueStatus ? styles.overdueStatus : styles.pendingStatus
             ]}>
-              {boleto.status === 'paid' ? 'Pago' : isPastDue() ? 'Vencido' : 'Pendente'}
+              {isPaid ? 'Pago' : isOverdueStatus ? 'Vencido' : 'Pendente'}
             </Text>
           </View>
         </View>
@@ -461,7 +576,7 @@ export default function BoletosScreen() {
             <Text style={styles.cardDetailLabel}>Vencimento:</Text>
             <Text style={[
               styles.cardDetailValue,
-              isPastDue() && styles.overdueText
+              isOverdueStatus && styles.overdueText
             ]}>{boleto.dueDate}</Text>
           </View>
           
@@ -476,22 +591,20 @@ export default function BoletosScreen() {
           <TouchableOpacity 
             style={[
               styles.cardAction,
-              boleto.status === 'paid' ? styles.paidCardAction : 
-              isPastDue() ? styles.overdueCardAction : styles.pendingCardAction,
+              isPaid ? styles.paidCardAction : 
+              isOverdueStatus ? styles.overdueCardAction : styles.pendingCardAction,
               generatingBoleto && styles.disabledCardAction
             ]}
             onPress={() => handleBoletoPress(boleto)}
-            disabled={generatingBoleto}
+            disabled={generatingBoleto && !isPaid}
           >
-            {generatingBoleto ? (
+            {generatingBoleto && !isPaid ? (
               <ActivityIndicator size={16} color="white" />
             ) : (
               <ExternalLink size={16} color="white" />
             )}
             <Text style={styles.cardActionText}>
-              {boleto.status === 'paid' ? 'Ver comprovante' : 
-               generatingBoleto ? 'Gerando...' : 
-               (boleto.pdfUrl || boleto.id.startsWith('pi_')) ? 'Ver boleto' : 'Gerar boleto'}
+              {buttonText}
             </Text>
           </TouchableOpacity>
 
@@ -508,32 +621,30 @@ export default function BoletosScreen() {
                 
                 try {
                   setGeneratingBoleto(true);
-                  const boletoCompleto = await getApiService().getBoletoById(boleto.id);
+                  const boletoCompleto = await getApiService().getBoletoById(boleto.id, 0); 
                   
-                  // Se tem PDF, fazer download direto
                   if (boletoCompleto.pdfUrl) {
                     console.log('📄 Fazendo download do PDF:', boletoCompleto.pdfUrl);
                     await downloadBoleto(boletoCompleto);
                   } 
-                  // Se tem hosted_voucher_url mas não PDF, abrir em WebView
-                  else if (boletoCompleto.paymentUrl) {
-                    console.log('🌐 Abrindo boleto em WebView:', boletoCompleto.paymentUrl);
+                  else if (boletoCompleto.paymentUrl && typeof boletoCompleto.paymentUrl === 'string' && boletoCompleto.paymentUrl.trim() !== '') {
+                    console.log('🌐 Abrindo boleto em WebView (via botão Download Card):', boletoCompleto.paymentUrl);
                     openBoletoInWebView(boletoCompleto.paymentUrl);
                   } 
                   else {
                     Alert.alert(
                       'Download não disponível', 
-                      'O PDF do boleto ainda está sendo processado. Tente novamente em alguns minutos ou use a opção "Ver boleto" para acessar mais detalhes.',
+                      'O PDF ou link de visualização do boleto ainda não está disponível. Tente novamente em alguns minutos ou use a opção "Ver boleto" para mais detalhes.',
                       [{ text: 'OK' }]
                     );
                   }
                   setGeneratingBoleto(false);
                 } catch (error) {
-                  console.error('Erro ao buscar dados para download:', error);
+                  console.error('Erro ao buscar dados para download no card:', error);
                   setGeneratingBoleto(false);
                   Alert.alert(
                     'Erro no Download', 
-                    'Não foi possível acessar o boleto para download. Tente novamente.',
+                    'Não foi possível acessar o boleto para download/visualização. Tente novamente.',
                     [{ text: 'OK' }]
                   );
                 }

@@ -12,6 +12,9 @@ export interface BoletoAPI {
   expires_at?: number;
   created_at?: string;
   updated_at?: string;
+  // Campos adicionais para tracking de invoices
+  invoice_id?: string;
+  payment_intent_id?: string | null;
 }
 
 export interface BoletoResponse {
