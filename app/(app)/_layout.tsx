@@ -33,9 +33,6 @@ function CustomDrawerContent(props: DrawerContentComponentProps) {
   const { user, logout } = useAuthStore();
   const router = useRouter();
   
-  // Log para debug
-  console.log('CustomDrawerContent: user =', user ? `${user.name} (${user.id})` : 'null');
-
   const handleLogout = async () => {
     await logout();
     router.replace('/(auth)');
@@ -105,9 +102,6 @@ function HeaderRight() {
   const { user } = useAuthStore();
   const router = useRouter();
   
-  // Log para debug
-  console.log('HeaderRight: user =', user ? `${user.name} (${user.id})` : 'null');
-  
   const handleProfilePress = () => {
     router.push('/profile');
   };
@@ -154,18 +148,14 @@ export default function AppLayout() {
       if (!isMounted) return;
       try {
         setAuthChecking(true);
-        console.log('AppLayout: Verificando autenticação com Firebase...');
         const silentLoginSuccess = await silentLogin();
         if (silentLoginSuccess) {
-          console.log('AppLayout: Login silencioso bem-sucedido');
           if (isMounted) {
             await checkAndRepairProfile();
           }
           return;
         }
-        console.log('AppLayout: Login silencioso falhou, tentando sincronizar com Firebase');
         const isAuth = await syncWithFirebase();
-        console.log('AppLayout: Estado de autenticação após sincronização:', isAuth ? 'Autenticado' : 'Não autenticado');
         if (isAuth && isMounted) {
           await checkAndRepairProfile();
         }
@@ -173,7 +163,6 @@ export default function AppLayout() {
         console.error('AppLayout: Erro ao verificar autenticação:', error);
       } finally {
         if (isMounted) {
-          console.log('AppLayout: Verificação concluída, atualizando estado...');
           setAuthChecking(false);
         }
       }
@@ -187,7 +176,6 @@ export default function AppLayout() {
   // Subscribe to notifications only when authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
-      console.log('Configurando notificações para usuário autenticado');
       fetchNotifications();
       subscribeToNotifications();
       

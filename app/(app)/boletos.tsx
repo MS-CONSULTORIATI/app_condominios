@@ -9,13 +9,18 @@ import {
   RefreshControl,
   Alert,
   FlatList,
-  Modal
+  Modal,
+  Dimensions
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { useAuthStore } from '@/store/auth-store';
 import Colors from '@/constants/colors';
-import { FilePlus, FileText, ExternalLink, ArrowLeft, Filter, Check, Clock, DollarSign, Calendar, X, CheckCircle } from 'lucide-react-native';
+import { FilePlus, FileText, ExternalLink, ArrowLeft, Filter, Check, Clock, DollarSign, Calendar, X, CheckCircle, Download, Eye } from 'lucide-react-native';
 import * as Linking from 'expo-linking';
+import * as Clipboard from 'expo-clipboard';
+import * as FileSystem from 'expo-file-system';
+import * as MediaLibrary from 'expo-media-library';
+import { WebView } from 'react-native-webview';
 import EmptyState from '@/components/EmptyState';
 import { boletosApiService } from '@/services/boletos-api';
 import { stripeBoletosService } from '@/services/stripe-boletos';
@@ -51,6 +56,9 @@ export default function BoletosScreen() {
   const [showBoletoModal, setShowBoletoModal] = useState(false);
   const [generatedBoleto, setGeneratedBoleto] = useState<any>(null);
   const [generatingBoleto, setGeneratingBoleto] = useState(false);
+  const [showWebView, setShowWebView] = useState(false);
+  const [webViewUrl, setWebViewUrl] = useState('');
+  const [downloading, setDownloading] = useState(false);
 
   // Determinar qual serviço usar baseado nas variáveis de ambiente
   const getApiService = () => {
@@ -342,6 +350,68 @@ export default function BoletosScreen() {
     router.back();
   };
 
+  // Função para baixar PDF do boleto
+  const downloadBoleto = async (boletoData: any) => {
+    if (!boletoData.pdfUrl) {
+      Alert.alert('Erro', 'URL do PDF não disponível');
+      return;
+    }
+
+    try {
+      setDownloading(true);
+      
+      // Solicitar permissões para salvar na galeria
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permissão Negada', 'É necessário permitir acesso à galeria para salvar o boleto.');
+        setDownloading(false);
+        return;
+      }
+
+      // Baixar o arquivo
+      const fileName = `boleto_${boletoData.id}_${new Date().getTime()}.pdf`;
+      const fileUri = FileSystem.documentDirectory + fileName;
+      
+      const downloadResult = await FileSystem.downloadAsync(boletoData.pdfUrl, fileUri);
+      
+      if (downloadResult.status === 200) {
+        // Salvar na galeria
+        const asset = await MediaLibrary.createAssetAsync(downloadResult.uri);
+        await MediaLibrary.createAlbumAsync('Boletos', asset, false);
+        
+        Alert.alert(
+          'Download Concluído',
+          'O boleto foi salvo na sua galeria na pasta "Boletos".',
+          [{ text: 'OK' }]
+        );
+      } else {
+        throw new Error('Falha no download');
+      }
+      
+      setDownloading(false);
+    } catch (error) {
+      console.error('Erro ao baixar boleto:', error);
+      setDownloading(false);
+      Alert.alert(
+        'Erro no Download',
+        'Não foi possível baixar o boleto. Tente novamente.',
+        [{ text: 'OK' }]
+      );
+    }
+  };
+
+  // Função para abrir boleto em WebView
+  const openBoletoInWebView = (url: string) => {
+    setWebViewUrl(url);
+    setShowWebView(true);
+  };
+
+  // Função para fechar WebView
+  const closeWebView = () => {
+    setShowWebView(false);
+    setWebViewUrl('');
+  };
+
   const renderBoletoCard = ({ item: boleto }: { item: Boleto }) => {
     const isPastDue = () => {
       // Verificar se o boleto pendente está vencido
@@ -431,23 +501,26 @@ export default function BoletosScreen() {
               style={[
                 styles.cardAction,
                 styles.downloadCardAction,
-                generatingBoleto && styles.disabledCardAction
+                (generatingBoleto || downloading) && styles.disabledCardAction
               ]}
               onPress={async () => {
-                if (generatingBoleto) return;
+                if (generatingBoleto || downloading) return;
                 
                 try {
                   setGeneratingBoleto(true);
                   const boletoCompleto = await getApiService().getBoletoById(boleto.id);
                   
-                  // Verificar se tem PDF ou link disponível
+                  // Se tem PDF, fazer download direto
                   if (boletoCompleto.pdfUrl) {
-                    console.log('📄 Abrindo PDF do boleto:', boletoCompleto.pdfUrl);
-                    Linking.openURL(boletoCompleto.pdfUrl);
-                  } else if (boletoCompleto.paymentUrl) {
-                    console.log('🌐 Abrindo página de pagamento:', boletoCompleto.paymentUrl);
-                    Linking.openURL(boletoCompleto.paymentUrl);
-                  } else {
+                    console.log('📄 Fazendo download do PDF:', boletoCompleto.pdfUrl);
+                    await downloadBoleto(boletoCompleto);
+                  } 
+                  // Se tem hosted_voucher_url mas não PDF, abrir em WebView
+                  else if (boletoCompleto.paymentUrl) {
+                    console.log('🌐 Abrindo boleto em WebView:', boletoCompleto.paymentUrl);
+                    openBoletoInWebView(boletoCompleto.paymentUrl);
+                  } 
+                  else {
                     Alert.alert(
                       'Download não disponível', 
                       'O PDF do boleto ainda está sendo processado. Tente novamente em alguns minutos ou use a opção "Ver boleto" para acessar mais detalhes.',
@@ -465,15 +538,15 @@ export default function BoletosScreen() {
                   );
                 }
               }}
-              disabled={generatingBoleto}
+              disabled={generatingBoleto || downloading}
             >
-              {generatingBoleto ? (
+              {(generatingBoleto || downloading) ? (
                 <ActivityIndicator size={16} color="white" />
               ) : (
-                <FileText size={16} color="white" />
+                <Download size={16} color="white" />
               )}
               <Text style={styles.cardActionText}>
-                {generatingBoleto ? 'Carregando...' : 'Download'}
+                {generatingBoleto ? 'Carregando...' : downloading ? 'Baixando...' : 'Download'}
               </Text>
             </TouchableOpacity>
           )}
@@ -648,9 +721,60 @@ export default function BoletosScreen() {
       }
     }
     
-    const displayDate = generatedBoleto.dueDate 
-      ? new Date(generatedBoleto.dueDate).toLocaleDateString('pt-BR')
-      : 'Data não disponível';
+    // Corrigir formatação da data de vencimento
+    let displayDate = 'Data não disponível';
+    
+    if (generatedBoleto.dueDate) {
+      try {
+        let dateObj;
+        
+        // Se for timestamp Unix (número)
+        if (typeof generatedBoleto.dueDate === 'number') {
+          dateObj = new Date(generatedBoleto.dueDate * 1000);
+        }
+        // Se for timestamp Unix como string
+        else if (typeof generatedBoleto.dueDate === 'string' && generatedBoleto.dueDate.match(/^\d+$/)) {
+          dateObj = new Date(parseInt(generatedBoleto.dueDate) * 1000);
+        }
+        // Se for ISO string
+        else if (typeof generatedBoleto.dueDate === 'string') {
+          dateObj = new Date(generatedBoleto.dueDate);
+        }
+        
+        // Verificar se a data é válida
+        if (dateObj && !isNaN(dateObj.getTime())) {
+          displayDate = dateObj.toLocaleDateString('pt-BR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+          });
+        }
+      } catch (error) {
+        console.error('Erro ao formatar data:', error);
+        displayDate = 'Data inválida';
+      }
+    }
+    
+    // Se temos expires_at do Stripe, usar esse valor
+    if (generatedBoleto.expires_at && typeof generatedBoleto.expires_at === 'number') {
+      try {
+        const expiresDate = new Date(generatedBoleto.expires_at * 1000);
+        if (!isNaN(expiresDate.getTime())) {
+          displayDate = expiresDate.toLocaleDateString('pt-BR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+          });
+        }
+      } catch (error) {
+        console.error('Erro ao formatar data de expiração:', error);
+      }
+    }
+
+    // Obter informações do usuário para exibir CPF/CNPJ
+    const customerDocument = user?.cpf || 'Não informado';
+    const customerName = user?.name || 'Não informado';
+    const customerEmail = user?.email || 'Não informado';
 
     console.log('🔍 Dados do modal:', {
       originalValue: generatedBoleto.value,
@@ -667,7 +791,10 @@ export default function BoletosScreen() {
       paymentUrl: generatedBoleto.paymentUrl,
       hasPdfUrl: !!generatedBoleto.pdfUrl,
       hasPaymentUrl: !!generatedBoleto.paymentUrl,
-      showDownloadSection: !!(generatedBoleto.pdfUrl || generatedBoleto.paymentUrl)
+      showDownloadSection: !!(generatedBoleto.pdfUrl || generatedBoleto.paymentUrl),
+      customerDocument,
+      customerName,
+      customerEmail
     });
 
     return (
@@ -679,7 +806,7 @@ export default function BoletosScreen() {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Boleto Gerado</Text>
+            <Text style={styles.modalTitle}>Visualizar Boleto</Text>
             <TouchableOpacity 
               onPress={handleCloseBoletoModal}
               style={styles.closeButton}
@@ -691,17 +818,22 @@ export default function BoletosScreen() {
           <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
             {/* Status de Geração */}
             <View style={styles.boletoHeader}>
-              <CheckCircle size={48} color={Colors.primary} />
-              <Text style={styles.boletoStatus}>Boleto Gerado com Sucesso!</Text>
+              <FileText size={48} color={Colors.primary} />
+              <Text style={styles.boletoStatus}>Boleto Bancário</Text>
               <Text style={styles.boletoDate}>
                 Vencimento: {displayDate}
               </Text>
             </View>
 
-            {/* Detalhes do Boleto */}
+            {/* Informações Principais do Boleto */}
             <View style={styles.boletoSection}>
-              <Text style={styles.boletoSectionTitle}>Dados do Boleto</Text>
+              <Text style={styles.boletoSectionTitle}>📋 Informações do Boleto</Text>
               
+              <View style={styles.boletoItem}>
+                <Text style={styles.boletoLabel}>ID do Boleto:</Text>
+                <Text style={styles.boletoValue}>{generatedBoleto.id}</Text>
+              </View>
+
               <View style={styles.boletoItem}>
                 <Text style={styles.boletoLabel}>Descrição:</Text>
                 <Text style={styles.boletoValue}>{generatedBoleto.description}</Text>
@@ -715,22 +847,54 @@ export default function BoletosScreen() {
               </View>
 
               <View style={styles.boletoItem}>
-                <Text style={styles.boletoLabel}>Vencimento:</Text>
+                <Text style={styles.boletoLabel}>Status:</Text>
+                <View style={styles.statusContainer}>
+                  {generatedBoleto.status === 'paid' ? (
+                    <>
+                      <CheckCircle size={16} color={Colors.success} />
+                      <Text style={[styles.boletoValue, { color: Colors.success }]}>Pago</Text>
+                    </>
+                  ) : (
+                    <>
+                      <Clock size={16} color={Colors.warning} />
+                      <Text style={[styles.boletoValue, { color: Colors.warning }]}>Pendente</Text>
+                    </>
+                  )}
+                </View>
+              </View>
+
+              <View style={styles.boletoItem}>
+                <Text style={styles.boletoLabel}>Data de Vencimento:</Text>
                 <Text style={styles.boletoValue}>
                   {displayDate}
                 </Text>
               </View>
+            </View>
+
+            {/* Informações do Cliente */}
+            <View style={styles.boletoSection}>
+              <Text style={styles.boletoSectionTitle}>👤 Dados do Pagador</Text>
+              
+              <View style={styles.boletoItem}>
+                <Text style={styles.boletoLabel}>Nome:</Text>
+                <Text style={styles.boletoValue}>{customerName}</Text>
+              </View>
 
               <View style={styles.boletoItem}>
-                <Text style={styles.boletoLabel}>ID do Boleto:</Text>
-                <Text style={styles.boletoValue}>{generatedBoleto.id}</Text>
+                <Text style={styles.boletoLabel}>CPF/CNPJ:</Text>
+                <Text style={styles.boletoValue}>{customerDocument}</Text>
+              </View>
+
+              <View style={styles.boletoItem}>
+                <Text style={styles.boletoLabel}>Email:</Text>
+                <Text style={styles.boletoValue}>{customerEmail}</Text>
               </View>
             </View>
 
             {/* Código de Barras e Linha Digitável */}
             {(generatedBoleto.barcode || generatedBoleto.digitable_line) && (
               <View style={styles.boletoSection}>
-                <Text style={styles.boletoSectionTitle}>Dados para Pagamento</Text>
+                <Text style={styles.boletoSectionTitle}>🔢 Dados para Pagamento</Text>
                 
                 {generatedBoleto.digitable_line && (
                   <View style={styles.boletoCodeContainer}>
@@ -738,14 +902,22 @@ export default function BoletosScreen() {
                       <Text style={styles.boletoCodeLabel}>Linha Digitável:</Text>
                       <TouchableOpacity 
                         style={styles.copyButton}
-                        onPress={() => {
-                          // Em um app real, você usaria Clipboard.setString do expo-clipboard
-                          console.log('📋 Copiando linha digitável:', generatedBoleto.digitable_line);
-                          Alert.alert(
-                            'Copiado!', 
-                            'A linha digitável foi copiada. Em uma versão futura, será copiada automaticamente para a área de transferência.',
-                            [{ text: 'OK' }]
-                          );
+                        onPress={async () => {
+                          try {
+                            await Clipboard.setStringAsync(generatedBoleto.digitable_line);
+                            Alert.alert(
+                              'Copiado!', 
+                              'A linha digitável foi copiada para a área de transferência.',
+                              [{ text: 'OK' }]
+                            );
+                          } catch (error) {
+                            console.error('Erro ao copiar linha digitável:', error);
+                            Alert.alert(
+                              'Erro', 
+                              'Não foi possível copiar a linha digitável. Tente novamente.',
+                              [{ text: 'OK' }]
+                            );
+                          }
                         }}
                       >
                         <Text style={styles.copyButtonText}>📋 Copiar</Text>
@@ -765,13 +937,22 @@ export default function BoletosScreen() {
                       <Text style={styles.boletoCodeLabel}>Código de Barras:</Text>
                       <TouchableOpacity 
                         style={styles.copyButton}
-                        onPress={() => {
-                          console.log('📋 Copiando código de barras:', generatedBoleto.barcode);
-                          Alert.alert(
-                            'Copiado!', 
-                            'O código de barras foi copiado. Em uma versão futura, será copiado automaticamente para a área de transferência.',
-                            [{ text: 'OK' }]
-                          );
+                        onPress={async () => {
+                          try {
+                            await Clipboard.setStringAsync(generatedBoleto.barcode);
+                            Alert.alert(
+                              'Copiado!', 
+                              'O código de barras foi copiado para a área de transferência.',
+                              [{ text: 'OK' }]
+                            );
+                          } catch (error) {
+                            console.error('Erro ao copiar código de barras:', error);
+                            Alert.alert(
+                              'Erro', 
+                              'Não foi possível copiar o código de barras. Tente novamente.',
+                              [{ text: 'OK' }]
+                            );
+                          }
                         }}
                       >
                         <Text style={styles.copyButtonText}>📋 Copiar</Text>
@@ -790,11 +971,11 @@ export default function BoletosScreen() {
             {/* Se não tiver código de barras, mostrar aviso */}
             {(!generatedBoleto.barcode && !generatedBoleto.digitable_line) && (
               <View style={styles.boletoSection}>
-                <Text style={styles.boletoSectionTitle}>Informação</Text>
+                <Text style={styles.boletoSectionTitle}>ℹ️ Informação</Text>
                 <View style={styles.boletoInfoBox}>
                   <Text style={styles.boletoInfoText}>
-                    ⏳ O código de barras e linha digitável ainda estão sendo processados pelo Stripe. 
-                    Eles estarão disponíveis em alguns minutos. Você pode usar o PDF ou o link de pagamento online.
+                    ⏳ O código de barras e linha digitável ainda estão sendo processados pelo sistema de pagamento. 
+                    Eles estarão disponíveis em alguns minutos. Você pode usar o PDF ou o link de visualização abaixo.
                   </Text>
                 </View>
               </View>
@@ -802,7 +983,7 @@ export default function BoletosScreen() {
 
             {/* Instruções */}
             <View style={styles.boletoSection}>
-              <Text style={styles.boletoSectionTitle}>Como Pagar</Text>
+              <Text style={styles.boletoSectionTitle}>📝 Como Pagar</Text>
               
               <View style={styles.boletoInfoBox}>
                 <Text style={styles.boletoInfoText}>
@@ -816,49 +997,63 @@ export default function BoletosScreen() {
 
             {/* Botões de Ação */}
             <View style={styles.boletoActions}>
-              {/* Botões de Download */}
+              {/* Botões de Visualização e Download */}
               <View style={styles.downloadSection}>
-                <Text style={styles.downloadSectionTitle}>💾 Opções de Download</Text>
+                <Text style={styles.downloadSectionTitle}>📱 Visualizar e Baixar</Text>
                 
-                {generatedBoleto.pdfUrl ? (
-                  <TouchableOpacity 
-                    style={[styles.boletoActionButton, styles.downloadButton]}
-                    onPress={() => {
-                      console.log('📄 Abrindo PDF do boleto:', generatedBoleto.pdfUrl);
-                      Linking.openURL(generatedBoleto.pdfUrl);
-                    }}
-                  >
-                    <FileText size={20} color="white" />
-                    <Text style={styles.boletoActionText}>Baixar PDF da Fatura</Text>
-                  </TouchableOpacity>
-                ) : (
-                  <View style={styles.downloadInfoBox}>
-                    <Text style={styles.downloadInfoText}>
-                      📄 PDF do boleto ainda não está disponível. 
-                      {generatedBoleto.paymentUrl ? 'Use a opção "Ver Online" abaixo.' : 'Aguarde alguns minutos e tente novamente.'}
-                    </Text>
-                  </View>
-                )}
-
+                {/* Botão para visualizar online usando hosted_voucher_url */}
                 {generatedBoleto.paymentUrl && (
                   <TouchableOpacity 
-                    style={[styles.boletoActionButton, styles.downloadButton]}
+                    style={[styles.boletoActionButton, styles.viewButton]}
                     onPress={() => {
-                      console.log('🌐 Abrindo página de pagamento:', generatedBoleto.paymentUrl);
-                      Linking.openURL(generatedBoleto.paymentUrl);
+                      console.log('🌐 Abrindo boleto em WebView para visualização:', generatedBoleto.paymentUrl);
+                      openBoletoInWebView(generatedBoleto.paymentUrl);
                     }}
                   >
-                    <ExternalLink size={20} color="white" />
-                    <Text style={styles.boletoActionText}>Ver Fatura Online</Text>
+                    <Eye size={20} color="white" />
+                    <Text style={styles.boletoActionText}>Visualizar Boleto</Text>
                   </TouchableOpacity>
+                )}
+
+                {/* Botão para baixar PDF */}
+                {generatedBoleto.pdfUrl ? (
+                  <TouchableOpacity 
+                    style={[
+                      styles.boletoActionButton, 
+                      styles.downloadButton,
+                      downloading && styles.disabledActionButton
+                    ]}
+                    onPress={() => {
+                      console.log('📄 Fazendo download do PDF do boleto:', generatedBoleto.pdfUrl);
+                      downloadBoleto(generatedBoleto);
+                    }}
+                    disabled={downloading}
+                  >
+                    {downloading ? (
+                      <ActivityIndicator size={20} color="white" />
+                    ) : (
+                      <Download size={20} color="white" />
+                    )}
+                    <Text style={styles.boletoActionText}>
+                      {downloading ? 'Baixando...' : 'Baixar PDF'}
+                    </Text>
+                  </TouchableOpacity>
+                ) : generatedBoleto.paymentUrl && (
+                  <View style={styles.downloadInfoBox}>
+                    <Text style={styles.downloadInfoText}>
+                      📄 O PDF será gerado automaticamente quando você acessar a visualização acima. 
+                      Na página do boleto, você poderá baixar o PDF diretamente.
+                    </Text>
+                  </View>
                 )}
               </View>
 
               {/* Botão de Pagamento Online (se disponível) */}
-              {generatedBoleto.paymentUrl && (
+              {generatedBoleto.paymentUrl && generatedBoleto.status === 'pending' && (
                 <TouchableOpacity 
                   style={[styles.boletoActionButton, styles.paymentButton]}
                   onPress={() => {
+                    console.log('💳 Abrindo pagamento online:', generatedBoleto.paymentUrl);
                     Linking.openURL(generatedBoleto.paymentUrl);
                   }}
                 >
@@ -868,27 +1063,38 @@ export default function BoletosScreen() {
               )}
 
               {/* Botão Compartilhar (se tiver dados) */}
-              {(generatedBoleto.barcode || generatedBoleto.digitable_line) && (
+              {(generatedBoleto.barcode || generatedBoleto.digitable_line || generatedBoleto.paymentUrl) && (
                 <TouchableOpacity 
                   style={[styles.boletoActionButton, styles.shareButton]}
-                  onPress={() => {
+                  onPress={async () => {
                     // Criar texto para compartilhar
-                    const shareText = `💰 Boleto para Pagamento\n\n` +
+                    const shareText = `💰 Boleto Bancário\n\n` +
                       `📋 Descrição: ${generatedBoleto.description}\n` +
                       `💵 Valor: R$ ${displayValue}\n` +
-                      `📅 Vencimento: ${displayDate}\n\n` +
+                      `📅 Vencimento: ${displayDate}\n` +
+                      `🆔 ID: ${generatedBoleto.id}\n\n` +
+                      `👤 Pagador: ${customerName}\n` +
+                      `📄 CPF/CNPJ: ${customerDocument}\n\n` +
                       (generatedBoleto.digitable_line ? `🔢 Linha Digitável:\n${generatedBoleto.digitable_line}\n\n` : '') +
                       (generatedBoleto.barcode ? `📊 Código de Barras:\n${generatedBoleto.barcode}\n\n` : '') +
+                      (generatedBoleto.paymentUrl ? `🌐 Visualizar Online:\n${generatedBoleto.paymentUrl}\n\n` : '') +
                       `📱 Gerado pelo App Condomínio Fácil`;
 
-                    // No React Native, você precisaria usar uma lib como react-native-share
-                    // Por enquanto, vamos copiar para clipboard (seria necessário expo-clipboard)
-                    console.log('📋 Dados para compartilhar:', shareText);
-                    Alert.alert(
-                      'Compartilhar Boleto', 
-                      'Os dados do boleto foram preparados. Em uma versão futura, esta funcionalidade permitirá compartilhar via WhatsApp, email, etc.',
-                      [{ text: 'OK' }]
-                    );
+                    try {
+                      await Clipboard.setStringAsync(shareText);
+                      Alert.alert(
+                        'Dados Copiados!', 
+                        'Todos os dados do boleto foram copiados para a área de transferência. Você pode agora colar em qualquer aplicativo de mensagem.',
+                        [{ text: 'OK' }]
+                      );
+                    } catch (error) {
+                      console.error('Erro ao copiar dados do boleto:', error);
+                      Alert.alert(
+                        'Erro', 
+                        'Não foi possível copiar os dados. Tente novamente.',
+                        [{ text: 'OK' }]
+                      );
+                    }
                   }}
                 >
                   <ExternalLink size={20} color="white" />
@@ -906,6 +1112,63 @@ export default function BoletosScreen() {
               </TouchableOpacity>
             </View>
           </ScrollView>
+        </View>
+      </Modal>
+    );
+  };
+
+  // Renderizar WebView Modal para boletos
+  const renderWebViewModal = () => {
+    return (
+      <Modal
+        visible={showWebView}
+        animationType="slide"
+        presentationStyle="formSheet"
+        onRequestClose={closeWebView}
+      >
+        <View style={styles.webViewContainer}>
+          <View style={styles.webViewHeader}>
+            <Text style={styles.webViewTitle}>Boleto Bancário</Text>
+            <TouchableOpacity 
+              onPress={closeWebView}
+              style={styles.webViewCloseButton}
+            >
+              <X size={24} color={Colors.gray[600]} />
+            </TouchableOpacity>
+          </View>
+          
+          {webViewUrl ? (
+            <WebView
+              source={{ uri: webViewUrl }}
+              style={styles.webView}
+              startInLoadingState={true}
+              renderLoading={() => (
+                <View style={styles.webViewLoading}>
+                  <ActivityIndicator size="large" color={Colors.primary} />
+                  <Text style={styles.webViewLoadingText}>Carregando boleto...</Text>
+                </View>
+              )}
+              onError={(syntheticEvent) => {
+                const { nativeEvent } = syntheticEvent;
+                console.error('WebView error:', nativeEvent);
+                Alert.alert(
+                  'Erro ao carregar',
+                  'Não foi possível carregar o boleto. Tente novamente.',
+                  [
+                    { text: 'Fechar', onPress: closeWebView },
+                    { text: 'Abrir no navegador', onPress: () => {
+                      closeWebView();
+                      Linking.openURL(webViewUrl);
+                    }}
+                  ]
+                );
+              }}
+            />
+          ) : (
+            <View style={styles.webViewError}>
+              <Text style={styles.webViewErrorText}>URL não disponível</Text>
+            </View>
+          )}
         </View>
       </Modal>
     );
@@ -1013,6 +1276,7 @@ export default function BoletosScreen() {
       {/* Modal do Comprovante */}
       {renderComprovanteModal()}
       {renderBoletoModal()}
+      {renderWebViewModal()}
     </>
   );
 }
@@ -1183,10 +1447,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   statusContainer: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 4,
-    marginLeft: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   paidStatusContainer: {
     backgroundColor: Colors.success + '20',
@@ -1203,6 +1466,7 @@ const styles = StyleSheet.create({
   },
   paidStatus: {
     color: Colors.success,
+    fontWeight: '500',
   },
   pendingStatus: {
     color: Colors.primary,
@@ -1577,5 +1841,52 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.gray[600],
     lineHeight: 20,
+  },
+  viewButton: {
+    backgroundColor: Colors.primary,
+  },
+  disabledActionButton: {
+    backgroundColor: Colors.gray[300],
+  },
+  webViewContainer: {
+    flex: 1,
+    backgroundColor: Colors.card,
+  },
+  webViewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+  },
+  webViewTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: Colors.gray[800],
+    marginRight: 16,
+  },
+  webViewCloseButton: {
+    padding: 8,
+  },
+  webView: {
+    flex: 1,
+  },
+  webViewLoading: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  webViewLoadingText: {
+    marginTop: 16,
+    color: Colors.gray[600],
+    fontSize: 16,
+  },
+  webViewError: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  webViewErrorText: {
+    color: Colors.error,
+    fontSize: 16,
+    fontWeight: '500',
   },
 }); 

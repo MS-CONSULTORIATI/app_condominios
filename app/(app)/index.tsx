@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Linking, RefreshControl, BackHandler } from 'react-native';
 import { router, useNavigation, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -64,10 +64,9 @@ export default function HomeScreen() {
   const [showHiddenNews, setShowHiddenNews] = useState(false);
   const [pendingPackagesCount, setPendingPackagesCount] = useState(0);
   const [totalUserPackagesCount, setTotalUserPackagesCount] = useState(0);
-
-  // Debug para verificar se o usuário é reconhecido como admin
-  console.log('User role:', user?.role);
-  console.log('Is admin:', isAdmin);
+  
+  // Ref para controlar se já está fazendo refresh
+  const isRefreshingRef = useRef(false);
 
   // Function to load package data
   const loadPackageData = useCallback(async () => {
@@ -92,14 +91,19 @@ export default function HomeScreen() {
     }
   }, [user]);
 
-  // Function to refresh all data
+  // Function to refresh all data com debounce
   const refreshData = useCallback(async () => {
-    console.log('Refreshing home screen data...');
+    // Evitar múltiplas chamadas simultâneas
+    if (isRefreshingRef.current) {
+      return;
+    }
+    
+    isRefreshingRef.current = true;
     setRefreshing(true);
     
     try {
-      // Refresh all data sources in parallel
-      await Promise.all([
+      // Usar Promise.allSettled ao invés de Promise.all para evitar que um erro pare todos
+      const results = await Promise.allSettled([
         fetchTopics(),
         fetchMeetings(),
         fetchDebtors().then(() => {
@@ -111,12 +115,19 @@ export default function HomeScreen() {
         loadPackageData()
       ]);
       
-      console.log('Data refresh complete');
+      // Log apenas erros, não sucessos
+      results.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          console.error(`Error in refresh operation ${index}:`, result.reason);
+        }
+      });
+      
     } catch (error) {
       console.error('Error refreshing data:', error);
       Alert.alert('Erro', 'Não foi possível atualizar os dados. Tente novamente.');
     } finally {
       setRefreshing(false);
+      isRefreshingRef.current = false;
     }
   }, [fetchTopics, fetchMeetings, fetchDebtors, fetchNews, getStats, getRecentNews, loadPackageData]);
 
@@ -130,19 +141,10 @@ export default function HomeScreen() {
   //   refreshData();
   // }, []);
 
-  // Refresh data when screen comes into focus
+  // Refresh data when screen comes into focus - SEM setInterval
   useFocusEffect(
     useCallback(() => {
-      console.log('Home screen focused - updating data');
       refreshData();
-      
-      // Optional: Set up real-time refresh interval
-      const refreshInterval = setInterval(() => {
-        console.log('Auto-refreshing home screen data');
-        refreshData();
-      }, 60000); // Refresh every 60 seconds
-      
-      return () => clearInterval(refreshInterval);
     }, [refreshData])
   );
 
@@ -284,15 +286,12 @@ export default function HomeScreen() {
 
   // Define services based on user role
   const getServices = () => {
-    console.log('Gerando serviços para o usuário:', user?.name);
-    console.log('Papel do usuário (role):', user?.role);
-    console.log('É admin?', isAdmin);
-
+    // Remover logs excessivos que podem causar problemas em produção
+    
     // Serviços disponíveis apenas para o síndico (admin)
     const adminServices = [];
     
     if (isAdmin) {
-      console.log('Adicionando serviços exclusivos do síndico');
       adminServices.push({
         title: "Administração",
         description: "Acesse o painel administrativo",
@@ -306,8 +305,6 @@ export default function HomeScreen() {
     const managerServices = [];
     
     if (isManager) {
-      console.log('Adicionando serviços de gerência');
-      
       // Ordem solicitada: 1-Abrir Portão, 2-Boletos, 3-Inadiplentes, 4-Cameras, 
       // 5-Prestadores de Serviços, 6-Criar Pauta, 7-Criar Reunião
       
@@ -491,10 +488,6 @@ export default function HomeScreen() {
     });
 
     // Combinar todos os serviços
-    console.log('Total de serviços admin:', adminServices.length);
-    console.log('Total de serviços gerente:', managerServices.length);
-    console.log('Total de serviços base:', baseServices.length);
-    
     return [...adminServices, ...managerServices, ...baseServices];
   };
 
