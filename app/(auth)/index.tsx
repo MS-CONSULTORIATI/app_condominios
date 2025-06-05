@@ -26,6 +26,7 @@ import Animated, {
   withDelay,
   Easing
 } from 'react-native-reanimated';
+import SafeAnimatedView, { SafeAnimations } from '@/components/SafeAnimatedView';
 import CondominiumInfoDrawer from '@/components/CondominiumInfoDrawer';
 import { initializeNotifications } from '@/lib/notifications';
 

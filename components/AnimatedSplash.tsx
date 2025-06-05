@@ -164,8 +164,7 @@ const AnimatedSplash: React.FC<AnimatedSplashProps> = ({ onAnimationComplete }) 
         >
           <View style={styles.loadingBar}>
             <Animated.View 
-              style={[styles.loadingProgress]}
-              entering={FadeIn.delay(1900).duration(1000)}
+              style={[styles.loadingProgress, progressAnimatedStyle]}
             />
           </View>
         </Animated.View>
