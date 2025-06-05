@@ -91,9 +91,18 @@ export default function LoginScreen() {
   useEffect(() => {
     if (!isAuthChecking && isAuthenticated && user) {
       console.log('LoginScreen: Já autenticado como', user.name, 'redirecionando para home');
+      // Aguardar mais tempo para garantir que o layout está pronto
       setTimeout(() => {
-        router.replace('/(app)');
-      }, 100);
+        try {
+          router.replace('/(app)');
+        } catch (error) {
+          console.error('Erro ao navegar após autenticação:', error);
+          // Se falhar, tentar novamente após mais tempo
+          setTimeout(() => {
+            router.replace('/(app)');
+          }, 500);
+        }
+      }, 200);
     }
   }, [isAuthenticated, user, isAuthChecking, router]);
 
@@ -157,8 +166,16 @@ export default function LoginScreen() {
       await initializeNotifications();
       // Usar setTimeout para garantir a navegação correta
       setTimeout(() => {
-        router.replace('/(app)');
-      }, 100);
+        try {
+          router.replace('/(app)');
+        } catch (error) {
+          console.error('Erro ao navegar após login:', error);
+          // Se falhar, tentar novamente após mais tempo
+          setTimeout(() => {
+            router.replace('/(app)');
+          }, 500);
+        }
+      }, 200);
     } catch (err) {
       setLocalError('Falha no login. Usuário ou Senha incorretos.');
       console.error(err);
@@ -182,8 +199,16 @@ export default function LoginScreen() {
         await initializeNotifications();
         // Usar setTimeout para garantir a navegação correta
         setTimeout(() => {
-          router.replace('/(app)');
-        }, 100);
+          try {
+            router.replace('/(app)');
+          } catch (error) {
+            console.error('Erro ao navegar após login biométrico:', error);
+            // Se falhar, tentar novamente após mais tempo
+            setTimeout(() => {
+              router.replace('/(app)');
+            }, 500);
+          }
+        }, 200);
       } else {
         setLocalError('Autenticação biométrica falhou. Tente novamente ou use email/senha.');
       }

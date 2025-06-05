@@ -442,6 +442,8 @@ export const useAuthStore = create<AuthState>()(
       silentLogin: async () => {
         console.log('Tentando login silencioso com credenciais salvas...');
         try {
+          // Aguardar um pouco para garantir que o layout está pronto
+          await new Promise(resolve => setTimeout(resolve, 100));
           // Verificar se já está autenticado no Firebase
           const currentUser = firebase.getAuth().currentUser;
           if (currentUser) {

@@ -133,6 +133,15 @@ export default function AppLayout() {
   const { isAuthenticated, user, syncWithFirebase, silentLogin, isAuthChecking, setAuthChecking } = useAuthStore();
   const { subscribeToNotifications, unsubscribeFromNotifications, fetchNotifications } = useNotificationsStore();
   const router = useRouter();
+  const [isLayoutReady, setIsLayoutReady] = useState(false);
+
+  // Marcar layout como pronto após a montagem
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLayoutReady(true);
+    }, 50);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Verificar integridade do perfil e repará-lo se necessário
   const checkAndRepairProfile = useCallback(async () => {
@@ -185,12 +194,24 @@ export default function AppLayout() {
     }
   }, [isAuthenticated, user, fetchNotifications, subscribeToNotifications, unsubscribeFromNotifications]);
 
-  // Redirecionar para login se não autenticado, mas só após checagem
+  // Redirecionar para login se não autenticado, mas só após checagem e layout pronto
   useEffect(() => {
-    if (!isAuthChecking && !isAuthenticated) {
-      router.replace('/(auth)');
+    if (!isAuthChecking && !isAuthenticated && isLayoutReady) {
+      // Aguardar um tick antes de navegar para garantir que o layout está montado
+      setTimeout(() => {
+        router.replace('/(auth)');
+      }, 100);
     }
-  }, [isAuthChecking, isAuthenticated, router]);
+  }, [isAuthChecking, isAuthenticated, isLayoutReady, router]);
+
+  // Se o layout não estiver pronto, mostrar loading
+  if (!isLayoutReady) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.card }}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+      </View>
+    );
+  }
 
   // Se estiver verificando autenticação, mostrar loading
   if (isAuthChecking) {

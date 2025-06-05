@@ -3,7 +3,7 @@ import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useState, useCallback } from "react";
-import { Platform, View, StyleSheet, StatusBar, AppState } from "react-native";
+import { Platform, View, StyleSheet, StatusBar, AppState, ActivityIndicator } from "react-native";
 import { ErrorBoundary } from "./error-boundary";
 import Colors from "@/constants/colors";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
