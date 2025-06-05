@@ -93,6 +93,7 @@
     "@expo/ngrok": "^4.1.0",
     "@react-native-community/cli": "^18.0.0",
     "@types/react": "~18.3.12",
+    "babel-plugin-transform-import-meta": "^2.3.3",
     "expo-module-scripts": "^4.1.6",
     "metro": "^0.81.0",
     "metro-config": "^0.81.0",

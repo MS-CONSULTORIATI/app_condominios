@@ -12,7 +12,12 @@ config.transformer.minifierConfig = {
   },
 };
 
-// Resolver problemas potenciais com reanimated
-config.resolver.unstable_enablePackageExports = true;
+// Configurar transformer para lidar com import.meta e reanimated
+config.transformer.getTransformOptions = async () => ({
+  transform: {
+    experimentalImportSupport: false,
+    inlineRequires: true,
+  },
+});
 
 module.exports = config; 
