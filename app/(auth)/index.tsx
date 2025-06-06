@@ -52,8 +52,8 @@ export default function LoginScreen() {
   const router = useRouter();
 
   // Animation values
-  const logoScale = useSharedValue(1);
-  const formOpacity = useSharedValue(0);
+  // const logoScale = useSharedValue(1);
+  // const formOpacity = useSharedValue(0);
 
   // Verificar autenticação com Firebase ao montar o componente
   useEffect(() => {
@@ -91,9 +91,18 @@ export default function LoginScreen() {
   useEffect(() => {
     if (!isAuthChecking && isAuthenticated && user) {
       console.log('LoginScreen: Já autenticado como', user.name, 'redirecionando para home');
+      // Aguardar mais tempo para garantir que o layout está pronto
       setTimeout(() => {
-        router.replace('/(app)');
-      }, 100);
+        try {
+          router.replace('/(app)');
+        } catch (error) {
+          console.error('Erro ao navegar após autenticação:', error);
+          // Se falhar, tentar novamente após mais tempo
+          setTimeout(() => {
+            router.replace('/(app)');
+          }, 500);
+        }
+      }, 200);
     }
   }, [isAuthenticated, user, isAuthChecking, router]);
 
@@ -116,31 +125,30 @@ export default function LoginScreen() {
   }, [biometricEnabled]);
 
   // Iniciar animações
-  useEffect(() => {
-    // Start animations
-    logoScale.value = withSequence(
-      withTiming(1.1, { duration: 800, easing: Easing.out(Easing.ease) }),
-      withTiming(1, { duration: 600, easing: Easing.inOut(Easing.ease) })
-    );
-    
-    formOpacity.value = withDelay(
-      400, 
-      withTiming(1, { duration: 800, easing: Easing.out(Easing.ease) })
-    );
-  }, []);
+  // useEffect(() => {
+  //   // Start animations
+  //   logoScale.value = withSequence(
+  //     withTiming(1.1, { duration: 800, easing: Easing.out(Easing.ease) }),
+  //     withTiming(1, { duration: 600, easing: Easing.inOut(Easing.ease) })
+  //   );
+  //   formOpacity.value = withDelay(
+  //     400, 
+  //     withTiming(1, { duration: 800, easing: Easing.out(Easing.ease) })
+  //   );
+  // }, []);
 
   // Animated styles definidos antes de qualquer retorno condicional
-  const logoAnimatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ scale: logoScale.value }],
-    };
-  });
+  // const logoAnimatedStyle = useAnimatedStyle(() => {
+  //   return {
+  //     transform: [{ scale: logoScale.value }],
+  //   };
+  // });
 
-  const formAnimatedStyle = useAnimatedStyle(() => {
-    return {
-      opacity: formOpacity.value,
-    };
-  });
+  // const formAnimatedStyle = useAnimatedStyle(() => {
+  //   return {
+  //     opacity: formOpacity.value,
+  //   };
+  // });
 
   // Funções de manipuladores de eventos
   const handleLogin = async () => {
@@ -157,8 +165,16 @@ export default function LoginScreen() {
       await initializeNotifications();
       // Usar setTimeout para garantir a navegação correta
       setTimeout(() => {
-        router.replace('/(app)');
-      }, 100);
+        try {
+          router.replace('/(app)');
+        } catch (error) {
+          console.error('Erro ao navegar após login:', error);
+          // Se falhar, tentar novamente após mais tempo
+          setTimeout(() => {
+            router.replace('/(app)');
+          }, 500);
+        }
+      }, 200);
     } catch (err) {
       setLocalError('Falha no login. Usuário ou Senha incorretos.');
       console.error(err);
@@ -182,8 +198,16 @@ export default function LoginScreen() {
         await initializeNotifications();
         // Usar setTimeout para garantir a navegação correta
         setTimeout(() => {
-          router.replace('/(app)');
-        }, 100);
+          try {
+            router.replace('/(app)');
+          } catch (error) {
+            console.error('Erro ao navegar após login biométrico:', error);
+            // Se falhar, tentar novamente após mais tempo
+            setTimeout(() => {
+              router.replace('/(app)');
+            }, 500);
+          }
+        }, 200);
       } else {
         setLocalError('Autenticação biométrica falhou. Tente novamente ou use email/senha.');
       }
@@ -234,45 +258,30 @@ export default function LoginScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <Animated.View style={[styles.logoContainer, logoAnimatedStyle]}>
+        <View style={styles.logoContainer}>
           <View style={styles.logoCircle}>
             <LogIn size={40} color={Colors.primary} />
           </View>
-          <Animated.Text 
-            entering={FadeIn.duration(800).delay(300)}
-            style={styles.appName}
-          >
+          <Text style={styles.appName}>
             Condomínio Fácil
-          </Animated.Text>
-          <Animated.Text 
-            entering={FadeIn.duration(800).delay(500)}
-            style={styles.appSlogan}
-          >
+          </Text>
+          <Text style={styles.appSlogan}>
             Gestão de condomínio simplificada
-          </Animated.Text>
-        </Animated.View>
+          </Text>
+        </View>
         
-        <Animated.View 
-          style={[styles.formContainer, formAnimatedStyle]}
-          entering={FadeIn.duration(800).delay(300)}
-        >
-          <Animated.Text 
-            entering={FadeIn.duration(600).delay(600)}
-            style={styles.title}
-          >
+        <View style={styles.formContainer}>
+          <Text style={styles.title}>
             Login
-          </Animated.Text>
+          </Text>
           
           {localError ? (
-            <Animated.View 
-              entering={FadeIn.duration(400)}
-              style={styles.errorContainer}
-            >
+            <View style={styles.errorContainer}>
               <Text style={styles.errorText}>{localError}</Text>
-            </Animated.View>
+            </View>
           ) : null}
           
-          <Animated.View entering={FadeIn.duration(600).delay(700)}>
+          <View>
             <Input
               label="Email"
               placeholder="Seu email"
@@ -282,9 +291,9 @@ export default function LoginScreen() {
               autoCapitalize="none"
               leftIcon={<Mail size={20} color={Colors.gray[500]} />}
             />
-          </Animated.View>
+          </View>
           
-          <Animated.View entering={FadeIn.duration(600).delay(800)}>
+          <View>
             <Input
               label="Senha"
               placeholder="Sua senha"
@@ -293,28 +302,28 @@ export default function LoginScreen() {
               secureTextEntry
               leftIcon={<Lock size={20} color={Colors.gray[500]} />}
             />
-          </Animated.View>
+          </View>
           
-          <Animated.View entering={FadeIn.duration(600).delay(900)}>
+          <View>
             <TouchableOpacity 
               style={styles.forgotPassword}
               onPress={handleForgotPassword}
             >
               <Text style={styles.forgotPasswordText}>Esqueceu a senha?</Text>
             </TouchableOpacity>
-          </Animated.View>
+          </View>
           
-          <Animated.View entering={FadeIn.duration(600).delay(1000)}>
+          <View>
             <Button
               title="Entrar"
               onPress={handleLogin}
               isLoading={localLoading}
               style={styles.loginButton}
             />
-          </Animated.View>
+          </View>
           
           {isBiometricAvailable && (
-            <Animated.View entering={FadeIn.duration(600).delay(1100)}>
+            <View>
               <Button
                 title="Entrar com Biometria"
                 onPress={handleBiometricLogin}
@@ -323,19 +332,16 @@ export default function LoginScreen() {
                 style={styles.biometricButton}
                 leftIcon={<Fingerprint size={20} color="white" />}
               />
-            </Animated.View>
+            </View>
           )}
-        </Animated.View>
+        </View>
         
-        <Animated.View 
-          style={styles.footer}
-          entering={FadeIn.duration(800).delay(1400)}
-        >
+        <View style={styles.footer}>
           <Text style={styles.footerText}>Não tem uma conta?</Text>
           <TouchableOpacity onPress={handleRegister}>
             <Text style={styles.footerLink}>Cadastre-se</Text>
           </TouchableOpacity>
-        </Animated.View>
+        </View>
       </ScrollView>
 
       {/* Condominium Info Drawer */}
