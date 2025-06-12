@@ -236,6 +236,8 @@ PODS:
     - ExpoModulesCore
     - ZXingObjC/OneD
     - ZXingObjC/PDF417
+  - ExpoClipboard (7.0.1):
+    - ExpoModulesCore
   - ExpoDevice (7.0.3):
     - ExpoModulesCore
   - ExpoDocumentPicker (13.0.3):
@@ -266,6 +268,9 @@ PODS:
     - ExpoModulesCore
   - ExpoLocation (18.0.10):
     - ExpoModulesCore
+  - ExpoMediaLibrary (17.0.6):
+    - ExpoModulesCore
+    - React-Core
   - ExpoModulesCore (2.2.3):
     - DoubleConversion
     - glog
@@ -1748,6 +1753,27 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
+  - react-native-webview (13.12.5):
+    - DoubleConversion
+    - glog
+    - hermes-engine
+    - RCT-Folly (= 2024.10.14.00)
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - Yoga
   - React-nativeconfig (0.76.9)
   - React-NativeModulesApple (0.76.9):
     - glog
@@ -2041,7 +2067,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - RNCPicker (2.9.0):
+  - RNCPicker (2.11.0):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -2083,10 +2109,10 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - RNFBApp (22.1.0):
+  - RNFBApp (22.2.1):
     - Firebase/CoreOnly (= 10.19.0)
     - React-Core
-  - RNFBMessaging (22.1.0):
+  - RNFBMessaging (22.2.1):
     - Firebase/Messaging (= 10.19.0)
     - FirebaseCoreExtension
     - React-Core
@@ -2244,7 +2270,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - RNSVG (15.8.0):
+  - RNSVG (15.12.0):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -2264,9 +2290,9 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNSVG/common (= 15.8.0)
+    - RNSVG/common (= 15.12.0)
     - Yoga
-  - RNSVG/common (15.8.0):
+  - RNSVG/common (15.12.0):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -2322,6 +2348,7 @@ DEPENDENCIES:
   - ExpoAsset (from `../node_modules/expo-asset/ios`)
   - ExpoBlur (from `../node_modules/expo-blur/ios`)
   - ExpoCamera (from `../node_modules/expo-camera/ios`)
+  - ExpoClipboard (from `../node_modules/expo-clipboard/ios`)
   - ExpoDevice (from `../node_modules/expo-device/ios`)
   - ExpoDocumentPicker (from `../node_modules/expo-document-picker/ios`)
   - ExpoFileSystem (from `../node_modules/expo-file-system/ios`)
@@ -2335,6 +2362,7 @@ DEPENDENCIES:
   - ExpoLinking (from `../node_modules/expo-linking/ios`)
   - ExpoLocalAuthentication (from `../node_modules/expo-local-authentication/ios`)
   - ExpoLocation (from `../node_modules/expo-location/ios`)
+  - ExpoMediaLibrary (from `../node_modules/expo-media-library/ios`)
   - ExpoModulesCore (from `../node_modules/expo-modules-core`)
   - ExpoSharing (from `../node_modules/expo-sharing/ios`)
   - ExpoSplashScreen (from `../node_modules/expo-splash-screen/ios`)
@@ -2381,6 +2409,7 @@ DEPENDENCIES:
   - React-Mapbuffer (from `../node_modules/react-native/ReactCommon`)
   - React-microtasksnativemodule (from `../node_modules/react-native/ReactCommon/react/nativemodule/microtasks`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
+  - react-native-webview (from `../node_modules/react-native-webview`)
   - React-nativeconfig (from `../node_modules/react-native/ReactCommon`)
   - React-NativeModulesApple (from `../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios`)
   - React-perflogger (from `../node_modules/react-native/ReactCommon/reactperflogger`)
@@ -2477,6 +2506,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-blur/ios"
   ExpoCamera:
     :path: "../node_modules/expo-camera/ios"
+  ExpoClipboard:
+    :path: "../node_modules/expo-clipboard/ios"
   ExpoDevice:
     :path: "../node_modules/expo-device/ios"
   ExpoDocumentPicker:
@@ -2503,6 +2534,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-local-authentication/ios"
   ExpoLocation:
     :path: "../node_modules/expo-location/ios"
+  ExpoMediaLibrary:
+    :path: "../node_modules/expo-media-library/ios"
   ExpoModulesCore:
     :path: "../node_modules/expo-modules-core"
   ExpoSharing:
@@ -2592,6 +2625,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon/react/nativemodule/microtasks"
   react-native-safe-area-context:
     :path: "../node_modules/react-native-safe-area-context"
+  react-native-webview:
+    :path: "../node_modules/react-native-webview"
   React-nativeconfig:
     :path: "../node_modules/react-native/ReactCommon"
   React-NativeModulesApple:
@@ -2686,6 +2721,7 @@ SPEC CHECKSUMS:
   ExpoAsset: 0687fe05f5d051c4a34dd1f9440bd00858413cfe
   ExpoBlur: 567af66164e3043a9a30069594aed1ddf0a88d97
   ExpoCamera: 173e000631122854b87c20310513981e89030bc6
+  ExpoClipboard: 5250b207b6d545f4e9aac5ea3c6e61c4f16d0aed
   ExpoDevice: cf7419343b6e060209aaadd596defb1b6320597f
   ExpoDocumentPicker: 8c1f88c2809ab2287350e8fac65964bf423578be
   ExpoFileSystem: c8c19bf80d914c83dda3beb8569d7fb603be0970
@@ -2699,6 +2735,7 @@ SPEC CHECKSUMS:
   ExpoLinking: 0381341519ca7180a3a057d20edb1cf6a908aaf4
   ExpoLocalAuthentication: 64bf2cbee456f5639d69a853684c285afc0602d8
   ExpoLocation: ad29273f84077363296657176ea39c3545521720
+  ExpoMediaLibrary: e76bf16d148184fc32f6302445d5d11e72ab47f5
   ExpoModulesCore: 8eec79e1392628058fdde9b2f6ba2ad918c27a55
   ExpoSharing: c4540ef2e6615a92e05d2bddf019e1f58f27119e
   ExpoSplashScreen: 0e176e85073dfb9686c100c7f9637975d00608dd
@@ -2756,6 +2793,7 @@ SPEC CHECKSUMS:
   React-Mapbuffer: 129fa9634f42d88a0c3761d2829db85175b985ee
   React-microtasksnativemodule: b5151a6d754fbf52292e758c4bb93b7c0d2f0b92
   react-native-safe-area-context: 1d6729449d40a99af12ca1ddd88d65c18e2ffa2d
+  react-native-webview: a2382d7bf7ed34e98ab8075ff176a4c9959329d6
   React-nativeconfig: 415626a63057638759bcc75e0a96e2e07771a479
   React-NativeModulesApple: bffc60f55895c2723b1e5472fa40567fe3df4923
   React-perflogger: 9b4f13c0afe56bc7b4a0e93ec74b1150421ee22d
@@ -2784,14 +2822,14 @@ SPEC CHECKSUMS:
   ReactCodegen: 31fcff227d0035956575be0c013a2edcc687a53c
   ReactCommon: 78c49c7cf7df16983ebc3c646b4f47398437f2ec
   RNCAsyncStorage: dab4d79eff1537daf3ca0fe7b419cd6f5b27f12d
-  RNCPicker: cf855b4741afa0650a0d468081fa8cfd749e07f5
+  RNCPicker: 77e2a4ed202429cf5bb321ab054c42e6155e6c21
   RNDateTimePicker: 02886d3adc59e7540df029e710bd84bb2dedbc34
-  RNFBApp: 579285473cab6ccc498865e47fc25a332882c9b8
-  RNFBMessaging: 20450bf3d6b2ddea11122229247f2dc16da4b216
+  RNFBApp: fe0c00da8058c90a9ce72c3b41d9bf58333dfe85
+  RNFBMessaging: de4ef695a85d3d2e19025ee5d99fa35fb48b73ad
   RNGestureHandler: e7ed303cb2f818d7c3481b588f49b7c66d3f3d6c
   RNReanimated: 3db30c743775821c4cae7bc5b76cad3642630236
   RNScreens: a09a20dc045ca372549fccd0537e2ced95e90aea
-  RNSVG: f23ad0ec7cee08be673201be50e423df7b81fc3a
+  RNSVG: da256d265c17ca95aa37356825ee54d7ea15071b
   SDWebImage: 8a6b7b160b4d710e2a22b6900e25301075c34cb3
   SDWebImageAVIFCoder: 00310d246aab3232ce77f1d8f0076f8c4b021d90
   SDWebImageSVGCoder: 15a300a97ec1c8ac958f009c02220ac0402e936c
@@ -2799,6 +2837,6 @@ SPEC CHECKSUMS:
   Yoga: 1259c7a8cbaccf7b4c3ddf8ee36ca11be9dee407
   ZXingObjC: 8898711ab495761b2dbbdec76d90164a6d7e14c5
 
-PODFILE CHECKSUM: b5a187b24fb8d9299d7a8ac863b8cba367f50a97
+PODFILE CHECKSUM: 83ca203a8957db688625b40f579a8a0b6699ec56
 
 COCOAPODS: 1.16.2

@@ -7,7 +7,7 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>$(DEVELOPMENT_LANGUAGE)</string>
     <key>CFBundleDisplayName</key>
-    <string>Condomínio Santa Cecília</string>
+    <string>Condomínio Facil</string>
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleIdentifier</key>
@@ -19,7 +19,7 @@
     <key>CFBundlePackageType</key>
     <string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.0.0</string>
+    <string>1.0.6</string>
     <key>CFBundleSignature</key>
     <string>????</string>
     <key>CFBundleURLTypes</key>
@@ -28,13 +28,13 @@
         <key>CFBundleURLSchemes</key>
         <array>
           <string>myapp</string>
-          <string>br.com.condominio.cecilia</string>
+          <string>br.com.condominio.facil</string>
         </array>
       </dict>
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>exp+condominio-cecilia</string>
+          <string>exp+condominio-facil</string>
         </array>
       </dict>
     </array>
@@ -54,9 +54,17 @@
     <key>NSCameraUsageDescription</key>
     <string>Este aplicativo precisa de acesso à sua câmera para tirar fotos para seu perfil.</string>
     <key>NSFaceIDUsageDescription</key>
-    <string>Permitir que o Condomínio Santa Cecília use Face ID para autenticação.</string>
+    <string>Permitir que o Condomínio Fácil use Face ID para autenticação.</string>
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>Allow $(PRODUCT_NAME) to access your location</string>
+    <key>NSLocationAlwaysUsageDescription</key>
+    <string>Allow $(PRODUCT_NAME) to access your location</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Allow $(PRODUCT_NAME) to access your location</string>
     <key>NSMicrophoneUsageDescription</key>
     <string>Allow $(PRODUCT_NAME) to access your microphone</string>
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>Allow $(PRODUCT_NAME) to save photos</string>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>Este aplicativo precisa de acesso à sua galeria de fotos para selecionar imagens para seu perfil.</string>
     <key>NSUserActivityTypes</key>
@@ -65,7 +73,6 @@
     </array>
     <key>UIBackgroundModes</key>
     <array>
-      <string>remote-notification</string>
       <string>remote-notification</string>
     </array>
     <key>UILaunchStoryboardName</key>
