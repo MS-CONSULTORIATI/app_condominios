@@ -99,15 +99,15 @@
     },
     "extra": {
       "eas": {
-        "projectId": "75a10dae-752d-45e2-af70-45a4830e9a5b"
+        "projectId": "66f95f3f-e8bd-402c-b52d-81743a483866"
       },
       "router": {
         "origin": "https://rork.app/"
       }
     },
-    "owner": "ms-consu",
+    "owner": "maike.silva",
     "updates": {
-      "url": "https://u.expo.dev/75a10dae-752d-45e2-af70-45a4830e9a5b2"
+      "url": "https://u.expo.dev/66f95f3f-e8bd-402c-b52d-81743a483866"
     }
   }
 }
