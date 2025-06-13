@@ -66,9 +66,9 @@
   "submit": {
     "production": {
       "ios": {
-        "appleId": "SEU_APPLE_ID",
-        "ascAppId": "ID_DO_APP_NA_APP_STORE_CONNECT",
-        "appleTeamId": "ID_DA_EQUIPE_APPLE"
+        "appleId": "desenvolvimento@msconsultoriati.com",
+        "ascAppId": "6747148865",
+        "appleTeamId": "349522LWJM"
       }
     }
   }
